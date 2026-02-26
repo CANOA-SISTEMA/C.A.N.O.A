@@ -1,11 +1,71 @@
-<!doctype html>
+<!DOCTYPE html>
 <html>
-  <head>
-    <meta charset="utf-8">
-    <title>Meu Site no GitHub Pages</title>
-  </head>
-  <body>
-    <h1>Olá — Este é meu site hospedado no GitHub Pages!</h1>
-    <p>Publicado a partir do repositório <em>SEU_USUARIO.github.io</em>.</p>
-  </body>
-</html>e
+<head>
+<meta charset="UTF-8">
+<title>Acesso Restrito</title>
+
+<style>
+body {
+  margin: 0;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-family: Arial, sans-serif;
+  background: url("SUA-IMAGEM-AQUI.jpg") no-repeat center center fixed;
+  background-size: cover;
+}
+
+.container {
+  background: rgba(0, 0, 0, 0.7);
+  padding: 40px;
+  border-radius: 10px;
+  text-align: center;
+  color: white;
+}
+
+input {
+  padding: 10px;
+  font-size: 16px;
+  margin-top: 10px;
+}
+
+button {
+  padding: 10px 20px;
+  margin-top: 15px;
+  font-size: 16px;
+  cursor: pointer;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+  <h2>Área Restrita</h2>
+  <p>Digite a senha para acessar</p>
+  <input type="password" id="senha" placeholder="Senha">
+  <br>
+  <button onclick="verificar()">Entrar</button>
+  <p id="erro" style="color:red;"></p>
+</div>
+
+<script>
+function verificar() {
+  var senha = document.getElementById("senha").value;
+
+  if (senha === "HEGEMOL") {
+    document.body.innerHTML = `
+      <div style="color:white;text-align:center;margin-top:20%;">
+        <h1>Acesso Liberado</h1>
+        <p>Bem-vindo.</p>
+      </div>
+    `;
+  } else {
+    document.getElementById("erro").innerText = "Senha incorreta!";
+  }
+}
+</script>
+
+</body>
+</html>
