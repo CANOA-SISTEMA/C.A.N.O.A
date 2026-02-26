@@ -3,275 +3,346 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Entrada — senha</title>
+  <title>Campo Invisível — Hegemol</title>
   <style>
-    :root{--bg:#000;--text:#fff;--accent:#9ad3ff}
-    *{box-sizing:border-box}
-    html,body{height:100%}
-    body{
+    :root{
+      --bg:#000;
+      --text:#bdbdbd;
+      --accent:#9f0000;
+      --underline:#444;
+    }
+    html,body{
+      height:100%;
       margin:0;
       background:var(--bg);
       color:var(--text);
-      font-family:Inter,Segoe UI,Arial,Helvetica,sans-serif;
+      font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+    }
+
+    /* center area */
+    .wrap{
+      min-height:100%;
       display:flex;
       align-items:center;
       justify-content:center;
       flex-direction:column;
-      user-select:none;
-      -webkit-user-select:none;
-      overflow:hidden;
+      gap:24px;
+      padding:40px;
+      box-sizing:border-box;
     }
 
-    .info{position:fixed;top:24px;left:24px;font-weight:600;letter-spacing:0.6px}
-
-    .container{
-      text-align:center;
-      display:flex;
-      gap:18px;
-      align-items:center;
-      flex-direction:column;
+    .hint{
+      color:var(--text);
+      opacity:.9;
+      font-size:18px;
+      letter-spacing:1px;
     }
 
-    .slots{
+    /* underline boxes */
+    .password-line{
       display:flex;
       gap:12px;
+      align-items:flex-end;
+      justify-content:center;
+    }
+    .char{
+      width:34px;
+      height:44px;
+      border-bottom:3px solid var(--underline);
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      font-size:22px;
+      box-sizing:border-box;
+      position:relative;
+      transition:transform .12s ease, border-color .15s;
+    }
+    .char.filled{
+      border-bottom-color:var(--accent);
+      transform:translateY(-2px);
     }
 
-    .slot{
-      width:44px;height:56px;display:flex;align-items:flex-end;justify-content:center;
-      border-bottom:3px solid rgba(255,255,255,0.14);
-      font-size:28px;line-height:1;color:rgba(255,255,255,0.95);
-      letter-spacing:4px;padding-bottom:6px;
+    /* invisible input sits above the boxes to receive typing */
+    input#hiddenInput{
+      position:absolute;
+      opacity:0;
+      pointer-events:auto;
+      width:1px;
+      height:1px;
+      left:-9999px; /* keep it offscreen but focused by JS */
     }
 
-    /* invisible input (still focusable) */
-    .hidden-input{
-      position:fixed;left:-9999px;opacity:0;height:0;width:0;border:0;padding:0;margin:0
+    /* small status text */
+    .status{
+      color:var(--text);
+      opacity:.85;
+      font-size:14px;
     }
 
-    .hint{margin-top:14px;color:rgba(255,255,255,0.6);font-size:13px}
-
-    /* wrong attempt animation */
-    .shake{animation:shake 480ms ease}
+    /* wrong attempt shake */
+    .shake{
+      animation:shake .36s;
+    }
     @keyframes shake{
-      0%{transform:translateX(0)}
-      25%{transform:translateX(-8px)}
-      50%{transform:translateX(8px)}
-      75%{transform:translateX(-6px)}
+      10%{transform:translateX(-6px)}
+      30%{transform:translateX(6px)}
+      50%{transform:translateX(-4px)}
+      70%{transform:translateX(4px)}
       100%{transform:translateX(0)}
     }
 
-    /* overlay for the "taunting" words and image */
-    .overlay{
-      position:fixed;inset:0;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;z-index:1200;overflow:hidden
+    /* overlay that appears after 3 errors */
+    .insult-overlay{
+      position:fixed;
+      inset:0;
+      background:rgba(0,0,0,.95);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      overflow:hidden;
+      z-index:9999;
+      pointer-events:none;
     }
-    .words{
-      position:absolute;inset:0;pointer-events:none;
+    .insult-overlay.show{ display:flex; pointer-events:auto; }
+
+    .insults{
+      position:absolute;
+      inset:0;
+      pointer-events:none;
     }
-    .words span{
-      position:absolute;font-weight:800;font-size:28px;color:rgba(255,255,255,0.08);white-space:nowrap;
-      animation:float 6s linear infinite;
-      text-transform:uppercase;letter-spacing:1px
+    .insults span{
+      position:absolute;
+      font-weight:800;
+      font-size:clamp(18px, 4vw, 56px);
+      color:rgba(255,50,50,.12);
+      transform:rotate(-8deg);
+      text-transform:uppercase;
+      letter-spacing:1px;
+      text-shadow:0 1px 0 rgba(0,0,0,.8);
+      animation:floatUp 4s linear infinite;
+      mix-blend-mode:overlay;
+      white-space:nowrap;
     }
-    @keyframes float{
-      0%{transform:translateY(10vh) rotate(-10deg);opacity:0}
-      10%{opacity:0.06}
-      50%{opacity:0.12}
-      90%{opacity:0.06}
-      100%{transform:translateY(-120vh) rotate(10deg);opacity:0}
+    @keyframes floatUp{
+      0%{ transform: translateY(0) rotate(-6deg); opacity:.06; }
+      50%{ opacity:.6; }
+      100%{ transform: translateY(-80vh) rotate(6deg); opacity:0; }
     }
 
-    .big-image{
-      width:40vmin;height:40vmin;max-width:420px;max-height:420px;z-index:1250;opacity:0;transform:scale(0.4);filter:drop-shadow(0 12px 40px rgba(255,0,0,0.15));animation:pop 1s ease forwards;
+    /* bottom progress bar */
+    .bottom-bar{
+      position:fixed;
+      left:0;
+      right:0;
+      bottom:0;
+      height:6px;
+      background:rgba(255,255,255,.03);
+      z-index:10000;
+      display:none;
     }
-    @keyframes pop{
-      to{opacity:1;transform:scale(1)}
+    .bottom-bar.show{ display:block; }
+    .bottom-bar .fill{
+      height:100%;
+      width:0%;
+      background:linear-gradient(90deg, rgba(160,0,0,1), rgba(220,60,60,.9));
+      transition:width .1s linear;
     }
 
-    .success{color:#90ee90;font-weight:700;margin-top:14px}
+    /* success message */
+    .success{
+      color: #b7ffb7;
+      font-weight:700;
+      letter-spacing:1px;
+      font-size:18px;
+    }
+
+    /* small helper */
+    .note{ font-size:12px; color:#7a7a7a; margin-top:6px; }
   </style>
 </head>
 <body>
-  <div class="info">3 chances</div>
+  <div class="wrap" onclick="document.getElementById('hiddenInput').focus()">
+    <div class="hint">3 chances</div>
 
-  <div class="container" tabindex="0" id="root">
-    <div class="slots" id="slots" aria-hidden="true"></div>
-    <div class="hint">Clique em qualquer lugar e digite a senha correta</div>
-    <div class="success" id="success" aria-live="polite" style="display:none">Senha correta — acesso liberado.</div>
+    <div class="password-line" aria-hidden="true" id="boxes">
+      <!-- 7 underlines (H e g e m o l = 7) -->
+      <div class="char" data-index="0"></div>
+      <div class="char" data-index="1"></div>
+      <div class="char" data-index="2"></div>
+      <div class="char" data-index="3"></div>
+      <div class="char" data-index="4"></div>
+      <div class="char" data-index="5"></div>
+      <div class="char" data-index="6"></div>
+    </div>
+
+    <input id="hiddenInput" type="password" maxlength="7" autocomplete="off" inputmode="latin"
+           aria-label="campo invisível para senha" />
+
+    <div class="status" id="status">Digite a senha (preste atenção: letras exatas)</div>
+    <div class="note">O campo é invisível — clique em qualquer lugar e comece a digitar.</div>
+
+    <div class="success" id="successMsg" style="display:none">Senha correta — Acesso liberado</div>
   </div>
 
-  <!-- hidden input used to capture typing -->
-  <input id="hiddenInput" class="hidden-input" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" aria-hidden="false" />
+  <!-- overlay insults -->
+  <div class="insult-overlay" id="overlay">
+    <div class="insults" id="insultsContainer"></div>
+  </div>
 
-  <!-- overlay container (inserted dynamically when needed) -->
+  <!-- progress bar -->
+  <div class="bottom-bar" id="progressWrap">
+    <div class="fill" id="progressFill"></div>
+  </div>
 
   <script>
     (function(){
-      const PASSWORD = 'Hegemol'; // senha conforme pedido (case-sensitive)
-      const LENGTH = PASSWORD.length;
-      let attempts = 3;
+      const PASSWORD = "Hegemol"; // senha exata (case-sensitive)
+      const INPUT = document.getElementById('hiddenInput');
+      const BOXES = Array.from(document.querySelectorAll('.char'));
+      const STATUS = document.getElementById('status');
+      const SUCCESS = document.getElementById('successMsg');
+      const OVERLAY = document.getElementById('overlay');
+      const INSULTS = document.getElementById('insultsContainer');
+      const PROGWRAP = document.getElementById('progressWrap');
+      const PROGFILL = document.getElementById('progressFill');
 
-      const root = document.getElementById('root');
-      const slotsEl = document.getElementById('slots');
-      const hiddenInput = document.getElementById('hiddenInput');
-      const successEl = document.getElementById('success');
+      let attempts = 0;
+      let animTimeout = null;
+      let progressInterval = null;
 
-      // create visual slots
-      const slots = [];
-      for(let i=0;i<LENGTH;i++){
-        const s = document.createElement('div'); s.className='slot'; s.textContent='';
-        slotsEl.appendChild(s); slots.push(s);
+      // Populate random insults when needed (but keep them as plain text)
+      const WORDS = ["idiota", "desiste", "nem perde tempo tentando"];
+
+      // keep focus ready
+      INPUT.focus();
+
+      function updateBoxes(value){
+        // Update underline visuals; characters themselves stay invisible (by design).
+        for(let i=0;i<BOXES.length;i++){
+          if(i < value.length){
+            BOXES[i].classList.add('filled');
+            BOXES[i].textContent = ""; // no visible char -> invisible field
+          } else {
+            BOXES[i].classList.remove('filled');
+            BOXES[i].textContent = "";
+          }
+        }
       }
 
-      function focusHidden(){
-        try{ hiddenInput.focus(); }catch(e){}
+      function handleWrongAttempt(){
+        attempts++;
+        STATUS.textContent = `Senha incorreta — tentativas: ${attempts} / 3`;
+        // shake animation
+        const line = document.querySelector('.password-line');
+        line.classList.remove('shake');
+        void line.offsetWidth;
+        line.classList.add('shake');
+
+        // clear input after short delay so user can try again
+        setTimeout(()=>{ INPUT.value = ""; updateBoxes(""); INPUT.focus(); }, 250);
+
+        if(attempts >= 3){
+          triggerInsults();
+        }
       }
 
-      // when container clicked, focus hidden input
-      root.addEventListener('click', ()=>{ focusHidden(); });
-
-      // initialize
-      let value = '';
-      updateSlots();
-      focusHidden();
-
-      // capture key events
-      hiddenInput.addEventListener('keydown', (ev)=>{
-        ev.stopPropagation();
-        if(ev.key === 'Backspace'){
-          value = value.slice(0,-1);
-          updateSlots();
-          ev.preventDefault();
-          return;
+      function triggerInsults(){
+        // build many floating insults
+        INSULTS.innerHTML = "";
+        const count = 36; // number of words on screen
+        const w = window.innerWidth;
+        const h = window.innerHeight;
+        for(let i=0;i<count;i++){
+          const span = document.createElement('span');
+          span.textContent = WORDS[i % WORDS.length];
+          // random position
+          const left = Math.random() * (w * 0.9);
+          const top = Math.random() * (h * 0.9);
+          const rot = (Math.random()*40)-20;
+          span.style.left = `${left}px`;
+          span.style.top = `${top}px`;
+          span.style.transform = `rotate(${rot}deg)`;
+          span.style.opacity = (0.04 + Math.random()*0.6).toString();
+          span.style.fontSize = `${14 + Math.random()*60}px`;
+          INSULTS.appendChild(span);
         }
-        if(ev.key === 'Enter'){
-          attemptCheck(); ev.preventDefault(); return;
+
+        // show overlay and start bottom progress
+        OVERLAY.classList.add('show');
+        PROGWRAP.classList.add('show');
+        PROGFILL.style.width = '0%';
+        let percent = 0;
+        // increase 1% at a time
+        progressInterval = setInterval(()=>{
+          percent++;
+          PROGFILL.style.width = percent + '%';
+          if(percent >= 100){
+            clearInterval(progressInterval);
+            // hide everything after a short fade
+            setTimeout(()=> {
+              OVERLAY.classList.remove('show');
+              PROGWRAP.classList.remove('show');
+              INSULTS.innerHTML = "";
+              PROGFILL.style.width = '0%';
+              attempts = 0; // reset attempts after the sequence
+              STATUS.textContent = 'Você pode tentar novamente.';
+              INPUT.value = "";
+              updateBoxes("");
+              INPUT.focus();
+            }, 300);
+          }
+        }, 60); // ~6 seconds to reach 100% (60ms * 100). You can adjust timing here.
+      }
+
+      function handleSuccess(){
+        SUCCESS.style.display = "block";
+        STATUS.style.display = "none";
+        // subtle success effect
+        BOXES.forEach(b=> b.style.borderBottomColor = "#b7ffb7");
+        // lock input
+        INPUT.blur();
+        INPUT.disabled = true;
+      }
+
+      // input listening
+      INPUT.addEventListener('input', (e)=>{
+        const v = e.target.value;
+        // keep only max length
+        updateBoxes(v);
+        // When full length reached, validate
+        if(v.length === PASSWORD.length){
+          if(v === PASSWORD){
+            handleSuccess();
+          } else {
+            handleWrongAttempt();
+          }
         }
-        if(ev.key.length === 1){
-          // accept printable characters, limit to length
-          if(value.length < LENGTH){
-            // only letters and common ascii
-            const ch = ev.key;
-            if(/^[\S]$/.test(ch)){
-              value += ch;
-              updateSlots();
+      });
+
+      // Allow Enter to submit early if user typed less than length
+      INPUT.addEventListener('keydown', (e)=>{
+        if(e.key === "Enter"){
+          const val = INPUT.value;
+          if(val.length === PASSWORD.length){
+            if(val === PASSWORD) handleSuccess();
+            else handleWrongAttempt();
+          } else {
+            // treat Enter as attempt only if non-empty
+            if(val.length > 0){
+              // pad or compare with same-length rule: require exact length, so this counts as wrong
+              handleWrongAttempt();
             }
           }
-          ev.preventDefault();
+          e.preventDefault();
         }
       });
 
-      function updateSlots(){
-        for(let i=0;i<LENGTH;i++){
-          slots[i].textContent = value[i] ? value[i] : '';
-        }
-      }
-
-      function attemptCheck(){
-        if(value.length !== LENGTH) return; // only check when full
-        if(value === PASSWORD){
-          successEl.style.display='block';
-          successEl.textContent = 'Senha correta — acesso liberado.';
-          // optionally lock further typing
-          hiddenInput.blur();
-        } else {
-          attempts -= 1;
-          // shake animation
-          slotsEl.classList.remove('shake');
-          // force reflow to restart animation
-          void slotsEl.offsetWidth;
-          slotsEl.classList.add('shake');
-
-          // clear typed value after small delay
-          setTimeout(()=>{ value=''; updateSlots(); }, 250);
-
-          if(attempts <= 0){
-            triggerTauntOverlay();
-          } else {
-            // update info text (top-left)
-            document.querySelector('.info').textContent = attempts + ' chance' + (attempts>1?'s':'');
-          }
-        }
-      }
-
-      function triggerTauntOverlay(){
-        // overlay element
-        const overlay = document.createElement('div'); overlay.className='overlay'; overlay.id='tauntOverlay';
-        // words container
-        const words = document.createElement('div'); words.className='words';
-
-        const phrases = ['idiota','desiste','nem perde tempo tentando'];
-        // create many spans randomly
-        for(let i=0;i<60;i++){
-          const sp = document.createElement('span');
-          const phrase = phrases[Math.floor(Math.random()*phrases.length)];
-          sp.textContent = phrase;
-          // random position and animation delay/duration
-          const left = Math.random()*110 - 5; // -5% to 105%
-          const top = Math.random()*110 - 5;
-          sp.style.left = left+'%';
-          sp.style.top = top+'%';
-          sp.style.fontSize = (14 + Math.random()*46) + 'px';
-          sp.style.transform = 'rotate(' + (Math.random()*60-30) + 'deg)';
-          sp.style.animationDuration = (4 + Math.random()*6) + 's';
-          sp.style.animationDelay = (Math.random()*2) + 's';
-          sp.style.opacity = 0.06 + Math.random()*0.18;
-          words.appendChild(sp);
-        }
-
-        // create an inline SVG image that "surges" (so no external fetch). This one is a red alert face.
-        const svg = `data:image/svg+xml;utf8,${encodeURIComponent(`
-          <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'>
-            <defs>
-              <radialGradient id='g' cx='50%' cy='30%'>
-                <stop offset='0%' stop-color='#ff7a7a'/>
-                <stop offset='60%' stop-color='#ff3b3b'/>
-                <stop offset='100%' stop-color='#b30000'/>
-              </radialGradient>
-            </defs>
-            <rect width='100%' height='100%' fill='none'/>
-            <g>
-              <circle cx='256' cy='220' r='180' fill='url(#g)' />
-              <rect x='120' y='300' width='272' height='36' rx='8' fill='#2b2b2b' />
-              <path d='M170 170 q40 -40 80 0' stroke='#2b2b2b' stroke-width='18' fill='none' stroke-linecap='round' />
-              <path d='M342 170 q-40 -40 -80 0' stroke='#2b2b2b' stroke-width='18' fill='none' stroke-linecap='round' />
-              <text x='256' y='115' text-anchor='middle' font-size='48' font-weight='700' fill='#fff' font-family='Arial'>ALERTA</text>
-            </g>
-          </svg>`)} `;
-
-        const img = document.createElement('img'); img.className='big-image'; img.src = svg; img.alt='alert';
-
-        overlay.appendChild(words);
-        overlay.appendChild(img);
-        document.body.appendChild(overlay);
-
-        // also update top-left counter to 0
-        document.querySelector('.info').textContent = '0 chances';
-
-        // after 10 seconds remove overlay and reset attempts
-        setTimeout(()=>{
-          document.body.removeChild(overlay);
-          attempts = 3;
-          document.querySelector('.info').textContent = '3 chances';
-          value=''; updateSlots();
-          // focus back to input to try again
-          focusHidden();
-        }, 10000);
-      }
-
-      // small helper: when the input loses focus, return focus so typing continues
-      document.addEventListener('click', ()=>{ focusHidden(); });
-
-      // extra: detect paste and filter
-      hiddenInput.addEventListener('paste', (ev)=>{
-        ev.preventDefault();
-        const t = (ev.clipboardData || window.clipboardData).getData('text') || '';
-        const cleaned = t.replace(/\s+/g,'').slice(0,LENGTH);
-        value = cleaned;
-        updateSlots();
-        attemptCheck();
-      });
-
+      // click anywhere focuses input
+      document.body.addEventListener('click', ()=> INPUT.focus());
+      // also ensure focus on load
+      window.addEventListener('load', ()=> INPUT.focus());
     })();
   </script>
 </body>
