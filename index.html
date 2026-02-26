@@ -1,206 +1,282 @@
 <!doctype html>
-<html>
+<html lang="pt-BR">
 <head>
-  <meta charset="utf-8">
-  <title>Blocos — Área Segura</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Entrada — senha</title>
   <style>
-    body { font-family: Arial, sans-serif; margin: 0; min-height:100vh;
-      display:flex; align-items:flex-start; justify-content:center;
-      background: url("SUA-IMAGEM-AQUI.jpg") no-repeat center center fixed;
-      background-size: cover;
-      color:#222;
+    :root{--bg:#000;--text:#fff;--accent:#9ad3ff}
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      background:var(--bg);
+      color:var(--text);
+      font-family:Inter,Segoe UI,Arial,Helvetica,sans-serif;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      flex-direction:column;
+      user-select:none;
+      -webkit-user-select:none;
+      overflow:hidden;
     }
-    .card { background: rgba(255,255,255,0.92); margin:40px; padding:20px; border-radius:8px; width:360px; box-shadow:0 6px 18px rgba(0,0,0,0.15); }
-    input, textarea, button { width:100%; padding:10px; margin-top:8px; box-sizing:border-box; }
-    .small { font-size:0.9rem; color:#555 }
-    .blocks { margin:40px; max-width:720px; }
-    .block { background:white; padding:12px; border-radius:6px; margin-bottom:12px; box-shadow:0 2px 6px rgba(0,0,0,0.06); }
-    img.preview { max-width:100%; border-radius:6px; margin-top:8px; }
+
+    .info{position:fixed;top:24px;left:24px;font-weight:600;letter-spacing:0.6px}
+
+    .container{
+      text-align:center;
+      display:flex;
+      gap:18px;
+      align-items:center;
+      flex-direction:column;
+    }
+
+    .slots{
+      display:flex;
+      gap:12px;
+    }
+
+    .slot{
+      width:44px;height:56px;display:flex;align-items:flex-end;justify-content:center;
+      border-bottom:3px solid rgba(255,255,255,0.14);
+      font-size:28px;line-height:1;color:rgba(255,255,255,0.95);
+      letter-spacing:4px;padding-bottom:6px;
+    }
+
+    /* invisible input (still focusable) */
+    .hidden-input{
+      position:fixed;left:-9999px;opacity:0;height:0;width:0;border:0;padding:0;margin:0
+    }
+
+    .hint{margin-top:14px;color:rgba(255,255,255,0.6);font-size:13px}
+
+    /* wrong attempt animation */
+    .shake{animation:shake 480ms ease}
+    @keyframes shake{
+      0%{transform:translateX(0)}
+      25%{transform:translateX(-8px)}
+      50%{transform:translateX(8px)}
+      75%{transform:translateX(-6px)}
+      100%{transform:translateX(0)}
+    }
+
+    /* overlay for the "taunting" words and image */
+    .overlay{
+      position:fixed;inset:0;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;z-index:1200;overflow:hidden
+    }
+    .words{
+      position:absolute;inset:0;pointer-events:none;
+    }
+    .words span{
+      position:absolute;font-weight:800;font-size:28px;color:rgba(255,255,255,0.08);white-space:nowrap;
+      animation:float 6s linear infinite;
+      text-transform:uppercase;letter-spacing:1px
+    }
+    @keyframes float{
+      0%{transform:translateY(10vh) rotate(-10deg);opacity:0}
+      10%{opacity:0.06}
+      50%{opacity:0.12}
+      90%{opacity:0.06}
+      100%{transform:translateY(-120vh) rotate(10deg);opacity:0}
+    }
+
+    .big-image{
+      width:40vmin;height:40vmin;max-width:420px;max-height:420px;z-index:1250;opacity:0;transform:scale(0.4);filter:drop-shadow(0 12px 40px rgba(255,0,0,0.15));animation:pop 1s ease forwards;
+    }
+    @keyframes pop{
+      to{opacity:1;transform:scale(1)}
+    }
+
+    .success{color:#90ee90;font-weight:700;margin-top:14px}
   </style>
 </head>
 <body>
+  <div class="info">3 chances</div>
 
-<div class="card" id="auth-card">
-  <h3>Entrar / Registrar</h3>
-  <p class="small">Digite seu email e confirme pelo link enviado.</p>
-  <input id="email" placeholder="seu@email.com" />
-  <button id="btn-login">Enviar link de login</button>
-  <p id="auth-msg" class="small"></p>
-</div>
+  <div class="container" tabindex="0" id="root">
+    <div class="slots" id="slots" aria-hidden="true"></div>
+    <div class="hint">Clique em qualquer lugar e digite a senha correta</div>
+    <div class="success" id="success" aria-live="polite" style="display:none">Senha correta — acesso liberado.</div>
+  </div>
 
-<div class="card" id="form-card" style="display:none;">
-  <h3>Novo Bloco</h3>
-  <input id="title" placeholder="Título (opcional)" />
-  <textarea id="content" rows="5" placeholder="Escreva aqui..."></textarea>
-  <input type="file" id="image" accept="image/*" />
-  <img id="img-preview" class="preview" style="display:none;" />
-  <button id="btn-save">Salvar bloco</button>
-  <p id="status" class="small"></p>
-  <button id="btn-logout" style="margin-top:8px;background:#eee;">Sair</button>
-</div>
+  <!-- hidden input used to capture typing -->
+  <input id="hiddenInput" class="hidden-input" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" aria-hidden="false" />
 
-<div class="blocks" id="my-blocks" style="display:none;">
-  <h3>Meus blocos</h3>
-  <div id="blocks-list"></div>
-</div>
+  <!-- overlay container (inserted dynamically when needed) -->
 
-<!-- Supabase client via CDN -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js/dist/supabase.min.js"></script>
-<script>
-  // coloque aqui os dados do seu projeto (NUNCA use service_role)
-  const SUPABASE_URL = "https://SEU_SUPABASE_URL";
-  const SUPABASE_ANON_KEY = "SEU_SUPABASE_ANON_KEY";
+  <script>
+    (function(){
+      const PASSWORD = 'Hegemol'; // senha conforme pedido (case-sensitive)
+      const LENGTH = PASSWORD.length;
+      let attempts = 3;
 
-  const supabase = supabasejs.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      const root = document.getElementById('root');
+      const slotsEl = document.getElementById('slots');
+      const hiddenInput = document.getElementById('hiddenInput');
+      const successEl = document.getElementById('success');
 
-  const authCard = document.getElementById('auth-card');
-  const formCard = document.getElementById('form-card');
-  const blocksSection = document.getElementById('my-blocks');
-
-  // Observa estado de autenticação
-  supabase.auth.onAuthStateChange((event, session) => {
-    if (session && session.user) {
-      authCard.style.display = 'none';
-      formCard.style.display = 'block';
-      blocksSection.style.display = 'block';
-      loadBlocks();
-    } else {
-      authCard.style.display = 'block';
-      formCard.style.display = 'none';
-      blocksSection.style.display = 'none';
-    }
-  });
-
-  // enviar link magic
-  document.getElementById('btn-login').addEventListener('click', async () => {
-    const email = document.getElementById('email').value;
-    if (!email) return alert('Coloque um email');
-    const { error } = await supabase.auth.signInWithOtp({ email });
-    document.getElementById('auth-msg').innerText = error ? error.message : 'Link enviado. Verifique o email.';
-  });
-
-  // logout
-  document.getElementById('btn-logout').addEventListener('click', async () => {
-    await supabase.auth.signOut();
-    location.reload();
-  });
-
-  // preview imagem
-  document.getElementById('image').addEventListener('change', (e) => {
-    const f = e.target.files[0];
-    if (!f) return;
-    const url = URL.createObjectURL(f);
-    const img = document.getElementById('img-preview');
-    img.src = url; img.style.display = 'block';
-  });
-
-  // salvar bloco
-  document.getElementById('btn-save').addEventListener('click', async () => {
-    const user = supabase.auth.getUser ? (await supabase.auth.getUser()).data.user : null;
-    if (!user) return alert('Você precisa entrar.');
-
-    const title = document.getElementById('title').value || null;
-    const content = document.getElementById('content').value || null;
-    const fileInput = document.getElementById('image');
-    const file = fileInput.files[0];
-
-    document.getElementById('status').innerText = 'Enviando...';
-
-    let image_path = null;
-
-    // validações básicas
-    if (file) {
-      if (file.size > 2 * 1024 * 1024) { // 2MB
-        return alert('Imagem muito grande (máx 2MB).');
+      // create visual slots
+      const slots = [];
+      for(let i=0;i<LENGTH;i++){
+        const s = document.createElement('div'); s.className='slot'; s.textContent='';
+        slotsEl.appendChild(s); slots.push(s);
       }
-      const allowed = ['image/jpeg','image/png','image/webp'];
-      if (!allowed.includes(file.type)) return alert('Formato de imagem não permitido.');
 
-      // criar nome único
-      const ext = file.name.split('.').pop();
-      const filename = `user-${user.id}/${Date.now()}.${ext}`;
-
-      // upload para bucket "user-images"
-      const { data, error: upErr } = await supabase.storage
-        .from('user-images')
-        .upload(filename, file, { cacheControl: '3600', upsert: false });
-
-      if (upErr) {
-        console.error(upErr); alert('Erro no upload: ' + upErr.message); return;
+      function focusHidden(){
+        try{ hiddenInput.focus(); }catch(e){}
       }
-      image_path = data.path;
-    }
 
-    // inserir metadados na tabela
-    const { error: insertErr } = await supabase
-      .from('blocks')
-      .insert({
-        user_id: user.id,
-        title: title,
-        content: content,
-        image_path: image_path
+      // when container clicked, focus hidden input
+      root.addEventListener('click', ()=>{ focusHidden(); });
+
+      // initialize
+      let value = '';
+      updateSlots();
+      focusHidden();
+
+      // capture key events
+      hiddenInput.addEventListener('keydown', (ev)=>{
+        ev.stopPropagation();
+        if(ev.key === 'Backspace'){
+          value = value.slice(0,-1);
+          updateSlots();
+          ev.preventDefault();
+          return;
+        }
+        if(ev.key === 'Enter'){
+          attemptCheck(); ev.preventDefault(); return;
+        }
+        if(ev.key.length === 1){
+          // accept printable characters, limit to length
+          if(value.length < LENGTH){
+            // only letters and common ascii
+            const ch = ev.key;
+            if(/^[\S]$/.test(ch)){
+              value += ch;
+              updateSlots();
+            }
+          }
+          ev.preventDefault();
+        }
       });
 
-    if (insertErr) {
-      console.error(insertErr);
-      document.getElementById('status').innerText = 'Erro ao salvar bloco.';
-    } else {
-      document.getElementById('status').innerText = 'Bloco salvo!';
-      document.getElementById('title').value = '';
-      document.getElementById('content').value = '';
-      fileInput.value = '';
-      document.getElementById('img-preview').style.display = 'none';
-      loadBlocks();
-    }
-  });
-
-  // carrega blocos do usuário
-  async function loadBlocks() {
-    const userResp = await supabase.auth.getUser();
-    const user = userResp.data.user;
-    if (!user) return;
-
-    const { data, error } = await supabase
-      .from('blocks')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    const list = document.getElementById('blocks-list');
-    list.innerHTML = '';
-    if (error) { list.innerText = 'Erro: ' + error.message; return; }
-    if (!data.length) { list.innerHTML = '<p class="small">Nenhum bloco ainda.</p>'; return; }
-
-    for (const b of data) {
-      const div = document.createElement('div'); div.className = 'block';
-      let html = `<strong>${b.title ? escapeHtml(b.title) : 'Sem título'}</strong>
-                  <p>${b.content ? escapeHtml(b.content) : ''}</p>
-                  <small class="small">${new Date(b.created_at).toLocaleString()}</small>`;
-      if (b.image_path) {
-        // cria URL assinado (public bucket vs private)
-        const { data: publicUrl } = await supabase.storage.from('user-images').getPublicUrl(b.image_path);
-        html += `<img src="${publicUrl.publicUrl}" class="preview" />`;
+      function updateSlots(){
+        for(let i=0;i<LENGTH;i++){
+          slots[i].textContent = value[i] ? value[i] : '';
+        }
       }
-      div.innerHTML = html;
-      list.appendChild(div);
-    }
-  }
 
-  function escapeHtml(text){
-    return text
-      .replaceAll('&','&amp;')
-      .replaceAll('<','&lt;')
-      .replaceAll('>','&gt;')
-      .replaceAll('"','&quot;');
-  }
+      function attemptCheck(){
+        if(value.length !== LENGTH) return; // only check when full
+        if(value === PASSWORD){
+          successEl.style.display='block';
+          successEl.textContent = 'Senha correta — acesso liberado.';
+          // optionally lock further typing
+          hiddenInput.blur();
+        } else {
+          attempts -= 1;
+          // shake animation
+          slotsEl.classList.remove('shake');
+          // force reflow to restart animation
+          void slotsEl.offsetWidth;
+          slotsEl.classList.add('shake');
 
-  // tenta restaurar sessão ao carregar
-  (async () => {
-    const { data } = await supabase.auth.getSession();
-    if (data.session) {
-      // sessão ativa -> loadBlocks será acionado pelo onAuthStateChange
-    }
-  })();
+          // clear typed value after small delay
+          setTimeout(()=>{ value=''; updateSlots(); }, 250);
+
+          if(attempts <= 0){
+            triggerTauntOverlay();
+          } else {
+            // update info text (top-left)
+            document.querySelector('.info').textContent = attempts + ' chance' + (attempts>1?'s':'');
+          }
+        }
+      }
+
+      function triggerTauntOverlay(){
+        // overlay element
+        const overlay = document.createElement('div'); overlay.className='overlay'; overlay.id='tauntOverlay';
+        // words container
+        const words = document.createElement('div'); words.className='words';
+
+        const phrases = ['idiota','desiste','nem perde tempo tentando'];
+        // create many spans randomly
+        for(let i=0;i<60;i++){
+          const sp = document.createElement('span');
+          const phrase = phrases[Math.floor(Math.random()*phrases.length)];
+          sp.textContent = phrase;
+          // random position and animation delay/duration
+          const left = Math.random()*110 - 5; // -5% to 105%
+          const top = Math.random()*110 - 5;
+          sp.style.left = left+'%';
+          sp.style.top = top+'%';
+          sp.style.fontSize = (14 + Math.random()*46) + 'px';
+          sp.style.transform = 'rotate(' + (Math.random()*60-30) + 'deg)';
+          sp.style.animationDuration = (4 + Math.random()*6) + 's';
+          sp.style.animationDelay = (Math.random()*2) + 's';
+          sp.style.opacity = 0.06 + Math.random()*0.18;
+          words.appendChild(sp);
+        }
+
+        // create an inline SVG image that "surges" (so no external fetch). This one is a red alert face.
+        const svg = `data:image/svg+xml;utf8,${encodeURIComponent(`
+          <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'>
+            <defs>
+              <radialGradient id='g' cx='50%' cy='30%'>
+                <stop offset='0%' stop-color='#ff7a7a'/>
+                <stop offset='60%' stop-color='#ff3b3b'/>
+                <stop offset='100%' stop-color='#b30000'/>
+              </radialGradient>
+            </defs>
+            <rect width='100%' height='100%' fill='none'/>
+            <g>
+              <circle cx='256' cy='220' r='180' fill='url(#g)' />
+              <rect x='120' y='300' width='272' height='36' rx='8' fill='#2b2b2b' />
+              <path d='M170 170 q40 -40 80 0' stroke='#2b2b2b' stroke-width='18' fill='none' stroke-linecap='round' />
+              <path d='M342 170 q-40 -40 -80 0' stroke='#2b2b2b' stroke-width='18' fill='none' stroke-linecap='round' />
+              <text x='256' y='115' text-anchor='middle' font-size='48' font-weight='700' fill='#fff' font-family='Arial'>ALERTA</text>
+            </g>
+          </svg>`)} `;
+
+        const img = document.createElement('img'); img.className='big-image'; img.src = svg; img.alt='alert';
+
+        overlay.appendChild(words);
+        overlay.appendChild(img);
+        document.body.appendChild(overlay);
+
+        // also update top-left counter to 0
+        document.querySelector('.info').textContent = '0 chances';
+
+        // after 10 seconds remove overlay and reset attempts
+        setTimeout(()=>{
+          document.body.removeChild(overlay);
+          attempts = 3;
+          document.querySelector('.info').textContent = '3 chances';
+          value=''; updateSlots();
+          // focus back to input to try again
+          focusHidden();
+        }, 10000);
+      }
+
+      // small helper: when the input loses focus, return focus so typing continues
+      document.addEventListener('click', ()=>{ focusHidden(); });
+
+      // extra: detect paste and filter
+      hiddenInput.addEventListener('paste', (ev)=>{
+        ev.preventDefault();
+        const t = (ev.clipboardData || window.clipboardData).getData('text') || '';
+        const cleaned = t.replace(/\s+/g,'').slice(0,LENGTH);
+        value = cleaned;
+        updateSlots();
+        attemptCheck();
+      });
+
+    })();
+  </script>
+</body>
+</html>
+
 
 </script>
 </body>
