@@ -1,71 +1,207 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
 <head>
-<meta charset="UTF-8">
-<title>Acesso Restrito</title>
-
-<style>
-body {
-  margin: 0;
-  height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  font-family: Arial, sans-serif;
-  background: url("SUA-IMAGEM-AQUI.jpg") no-repeat center center fixed;
-  background-size: cover;
-}
-
-.container {
-  background: rgba(0, 0, 0, 0.7);
-  padding: 40px;
-  border-radius: 10px;
-  text-align: center;
-  color: white;
-}
-
-input {
-  padding: 10px;
-  font-size: 16px;
-  margin-top: 10px;
-}
-
-button {
-  padding: 10px 20px;
-  margin-top: 15px;
-  font-size: 16px;
-  cursor: pointer;
-}
-</style>
+  <meta charset="utf-8">
+  <title>Blocos — Área Segura</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; min-height:100vh;
+      display:flex; align-items:flex-start; justify-content:center;
+      background: url("SUA-IMAGEM-AQUI.jpg") no-repeat center center fixed;
+      background-size: cover;
+      color:#222;
+    }
+    .card { background: rgba(255,255,255,0.92); margin:40px; padding:20px; border-radius:8px; width:360px; box-shadow:0 6px 18px rgba(0,0,0,0.15); }
+    input, textarea, button { width:100%; padding:10px; margin-top:8px; box-sizing:border-box; }
+    .small { font-size:0.9rem; color:#555 }
+    .blocks { margin:40px; max-width:720px; }
+    .block { background:white; padding:12px; border-radius:6px; margin-bottom:12px; box-shadow:0 2px 6px rgba(0,0,0,0.06); }
+    img.preview { max-width:100%; border-radius:6px; margin-top:8px; }
+  </style>
 </head>
-
 <body>
 
-<div class="container">
-  <h2>Área Restrita</h2>
-  <p>Digite a senha para acessar</p>
-  <input type="password" id="senha" placeholder="Senha">
-  <br>
-  <button onclick="verificar()">Entrar</button>
-  <p id="erro" style="color:red;"></p>
+<div class="card" id="auth-card">
+  <h3>Entrar / Registrar</h3>
+  <p class="small">Digite seu email e confirme pelo link enviado.</p>
+  <input id="email" placeholder="seu@email.com" />
+  <button id="btn-login">Enviar link de login</button>
+  <p id="auth-msg" class="small"></p>
 </div>
 
+<div class="card" id="form-card" style="display:none;">
+  <h3>Novo Bloco</h3>
+  <input id="title" placeholder="Título (opcional)" />
+  <textarea id="content" rows="5" placeholder="Escreva aqui..."></textarea>
+  <input type="file" id="image" accept="image/*" />
+  <img id="img-preview" class="preview" style="display:none;" />
+  <button id="btn-save">Salvar bloco</button>
+  <p id="status" class="small"></p>
+  <button id="btn-logout" style="margin-top:8px;background:#eee;">Sair</button>
+</div>
+
+<div class="blocks" id="my-blocks" style="display:none;">
+  <h3>Meus blocos</h3>
+  <div id="blocks-list"></div>
+</div>
+
+<!-- Supabase client via CDN -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js/dist/supabase.min.js"></script>
 <script>
-function verificar() {
-  var senha = document.getElementById("senha").value;
+  // coloque aqui os dados do seu projeto (NUNCA use service_role)
+  const SUPABASE_URL = "https://SEU_SUPABASE_URL";
+  const SUPABASE_ANON_KEY = "SEU_SUPABASE_ANON_KEY";
 
-  if (senha === "HEGEMOL") {
-    document.body.innerHTML = `
-      <div style="color:white;text-align:center;margin-top:20%;">
-        <h1>Acesso Liberado</h1>
-        <p>Bem-vindo.</p>
-      </div>
-    `;
-  } else {
-    document.getElementById("erro").innerText = "Senha incorreta!";
+  const supabase = supabasejs.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  const authCard = document.getElementById('auth-card');
+  const formCard = document.getElementById('form-card');
+  const blocksSection = document.getElementById('my-blocks');
+
+  // Observa estado de autenticação
+  supabase.auth.onAuthStateChange((event, session) => {
+    if (session && session.user) {
+      authCard.style.display = 'none';
+      formCard.style.display = 'block';
+      blocksSection.style.display = 'block';
+      loadBlocks();
+    } else {
+      authCard.style.display = 'block';
+      formCard.style.display = 'none';
+      blocksSection.style.display = 'none';
+    }
+  });
+
+  // enviar link magic
+  document.getElementById('btn-login').addEventListener('click', async () => {
+    const email = document.getElementById('email').value;
+    if (!email) return alert('Coloque um email');
+    const { error } = await supabase.auth.signInWithOtp({ email });
+    document.getElementById('auth-msg').innerText = error ? error.message : 'Link enviado. Verifique o email.';
+  });
+
+  // logout
+  document.getElementById('btn-logout').addEventListener('click', async () => {
+    await supabase.auth.signOut();
+    location.reload();
+  });
+
+  // preview imagem
+  document.getElementById('image').addEventListener('change', (e) => {
+    const f = e.target.files[0];
+    if (!f) return;
+    const url = URL.createObjectURL(f);
+    const img = document.getElementById('img-preview');
+    img.src = url; img.style.display = 'block';
+  });
+
+  // salvar bloco
+  document.getElementById('btn-save').addEventListener('click', async () => {
+    const user = supabase.auth.getUser ? (await supabase.auth.getUser()).data.user : null;
+    if (!user) return alert('Você precisa entrar.');
+
+    const title = document.getElementById('title').value || null;
+    const content = document.getElementById('content').value || null;
+    const fileInput = document.getElementById('image');
+    const file = fileInput.files[0];
+
+    document.getElementById('status').innerText = 'Enviando...';
+
+    let image_path = null;
+
+    // validações básicas
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) { // 2MB
+        return alert('Imagem muito grande (máx 2MB).');
+      }
+      const allowed = ['image/jpeg','image/png','image/webp'];
+      if (!allowed.includes(file.type)) return alert('Formato de imagem não permitido.');
+
+      // criar nome único
+      const ext = file.name.split('.').pop();
+      const filename = `user-${user.id}/${Date.now()}.${ext}`;
+
+      // upload para bucket "user-images"
+      const { data, error: upErr } = await supabase.storage
+        .from('user-images')
+        .upload(filename, file, { cacheControl: '3600', upsert: false });
+
+      if (upErr) {
+        console.error(upErr); alert('Erro no upload: ' + upErr.message); return;
+      }
+      image_path = data.path;
+    }
+
+    // inserir metadados na tabela
+    const { error: insertErr } = await supabase
+      .from('blocks')
+      .insert({
+        user_id: user.id,
+        title: title,
+        content: content,
+        image_path: image_path
+      });
+
+    if (insertErr) {
+      console.error(insertErr);
+      document.getElementById('status').innerText = 'Erro ao salvar bloco.';
+    } else {
+      document.getElementById('status').innerText = 'Bloco salvo!';
+      document.getElementById('title').value = '';
+      document.getElementById('content').value = '';
+      fileInput.value = '';
+      document.getElementById('img-preview').style.display = 'none';
+      loadBlocks();
+    }
+  });
+
+  // carrega blocos do usuário
+  async function loadBlocks() {
+    const userResp = await supabase.auth.getUser();
+    const user = userResp.data.user;
+    if (!user) return;
+
+    const { data, error } = await supabase
+      .from('blocks')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    const list = document.getElementById('blocks-list');
+    list.innerHTML = '';
+    if (error) { list.innerText = 'Erro: ' + error.message; return; }
+    if (!data.length) { list.innerHTML = '<p class="small">Nenhum bloco ainda.</p>'; return; }
+
+    for (const b of data) {
+      const div = document.createElement('div'); div.className = 'block';
+      let html = `<strong>${b.title ? escapeHtml(b.title) : 'Sem título'}</strong>
+                  <p>${b.content ? escapeHtml(b.content) : ''}</p>
+                  <small class="small">${new Date(b.created_at).toLocaleString()}</small>`;
+      if (b.image_path) {
+        // cria URL assinado (public bucket vs private)
+        const { data: publicUrl } = await supabase.storage.from('user-images').getPublicUrl(b.image_path);
+        html += `<img src="${publicUrl.publicUrl}" class="preview" />`;
+      }
+      div.innerHTML = html;
+      list.appendChild(div);
+    }
   }
-}
-</script>
 
+  function escapeHtml(text){
+    return text
+      .replaceAll('&','&amp;')
+      .replaceAll('<','&lt;')
+      .replaceAll('>','&gt;')
+      .replaceAll('"','&quot;');
+  }
+
+  // tenta restaurar sessão ao carregar
+  (async () => {
+    const { data } = await supabase.auth.getSession();
+    if (data.session) {
+      // sessão ativa -> loadBlocks será acionado pelo onAuthStateChange
+    }
+  })();
+
+</script>
 </body>
 </html>
