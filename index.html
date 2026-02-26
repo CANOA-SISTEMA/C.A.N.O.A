@@ -1,354 +1,419 @@
 <!doctype html>
 <html lang="pt-BR">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Campo Invisível — Hegemol</title>
-  <style>
-    :root{
-      --bg:#000;
-      --text:#bdbdbd;
-      --accent:#9f0000;
-      --underline:#444;
-    }
-    html,body{
-      height:100%;
-      margin:0;
-      background:var(--bg);
-      color:var(--text);
-      font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-      -webkit-font-smoothing:antialiased;
-      -moz-osx-font-smoothing:grayscale;
-    }
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>3 chances (refatorado)</title>
+<style>
+:root{
+  --bg: #000;
+  --muted: #777;
+  --accent: #ff3b3b;
+  --success: #0f0;
+  --height-box: 45px;
+  --width-char: 35px;
+}
 
-    /* center area */
-    .wrap{
-      min-height:100%;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      flex-direction:column;
-      gap:24px;
-      padding:40px;
-      box-sizing:border-box;
-    }
+/* Reset básico */
+html,body{height:100%;margin:0;background:var(--bg);color:#ddd;font-family:system-ui, monospace;overflow:hidden}
+a{color:inherit}
 
-    .hint{
-      color:var(--text);
-      opacity:.9;
-      font-size:18px;
-      letter-spacing:1px;
-    }
+/* Container central */
+.wrap{
+  height:100%;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  gap:22px;
+  position:relative;
+  padding:24px;
+  box-sizing:border-box;
+}
 
-    /* underline boxes */
-    .password-line{
-      display:flex;
-      gap:12px;
-      align-items:flex-end;
-      justify-content:center;
-    }
-    .char{
-      width:34px;
-      height:44px;
-      border-bottom:3px solid var(--underline);
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
-      font-size:22px;
-      box-sizing:border-box;
-      position:relative;
-      transition:transform .12s ease, border-color .15s;
-    }
-    .char.filled{
-      border-bottom-color:var(--accent);
-      transform:translateY(-2px);
-    }
+/* Texto glitch (com fallback de redução de movimento) */
+.glitch{
+  font-size:28px;
+  position:relative;
+  color:#fff;
+  user-select:none;
+  animation:glitch 1s infinite;
+}
+@keyframes glitch{
+  0%{text-shadow:2px 0 var(--accent), -2px 0 #2af;}
+  20%{text-shadow:-2px 0 var(--accent), 2px 0 #2af;}
+  40%{text-shadow:2px 2px var(--accent), -2px -2px #2af;}
+  60%{text-shadow:-2px -2px var(--accent), 2px 2px #2af;}
+  80%{text-shadow:2px -2px var(--accent), -2px 2px #2af;}
+  100%{text-shadow:-2px 2px var(--accent), 2px -2px #2af;}
+}
 
-    /* invisible input sits above the boxes to receive typing */
-    input#hiddenInput{
-      position:absolute;
-      opacity:0;
-      pointer-events:auto;
-      width:1px;
-      height:1px;
-      left:-9999px; /* keep it offscreen but focused by JS */
-    }
+/* Linha de caixas */
+.password-line{
+  display:flex;
+  gap:12px;
+  align-items:end;
+}
+.char{
+  width:var(--width-char);
+  height:var(--height-box);
+  border-bottom:3px solid #444;
+  box-sizing:border-box;
+  border-radius:4px 4px 0 0;
+}
+.char.filled{
+  border-bottom:3px solid var(--accent);
+  background: rgba(255,255,255,0.02);
+}
 
-    /* small status text */
-    .status{
-      color:var(--text);
-      opacity:.85;
-      font-size:14px;
-    }
+/* Input visualmente escondido, mas acessível */
+.sr-only{
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0,0,0,0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
 
-    /* wrong attempt shake */
-    .shake{
-      animation:shake .36s;
-    }
-    @keyframes shake{
-      10%{transform:translateX(-6px)}
-      30%{transform:translateX(6px)}
-      50%{transform:translateX(-4px)}
-      70%{transform:translateX(4px)}
-      100%{transform:translateX(0)}
-    }
+/* Animação de shake (para erro) */
+.shake{
+  animation:shake .35s;
+}
+@keyframes shake{
+  0%{transform:translate(2px,2px)}
+  25%{transform:translate(-2px,-2px)}
+  50%{transform:translate(-3px,2px)}
+  75%{transform:translate(3px,-2px)}
+  100%{transform:translate(0,0)}
+}
 
-    /* overlay that appears after 3 errors */
-    .insult-overlay{
-      position:fixed;
-      inset:0;
-      background:rgba(0,0,0,.95);
-      display:none;
-      align-items:center;
-      justify-content:center;
-      overflow:hidden;
-      z-index:9999;
-      pointer-events:none;
-    }
-    .insult-overlay.show{ display:flex; pointer-events:auto; }
+/* Overlay de bloqueio/erro */
+.overlay{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.85);
+  display:none;
+  z-index:999;
+  align-items:center;
+  justify-content:center;
+  color:var(--accent);
+  text-align:center;
+  padding:20px;
+}
+.overlay.show{display:flex}
 
-    .insults{
-      position:absolute;
-      inset:0;
-      pointer-events:none;
-    }
-    .insults span{
-      position:absolute;
-      font-weight:800;
-      font-size:clamp(18px, 4vw, 56px);
-      color:rgba(255,50,50,.12);
-      transform:rotate(-8deg);
-      text-transform:uppercase;
-      letter-spacing:1px;
-      text-shadow:0 1px 0 rgba(0,0,0,.8);
-      animation:floatUp 4s linear infinite;
-      mix-blend-mode:overlay;
-      white-space:nowrap;
-    }
-    @keyframes floatUp{
-      0%{ transform: translateY(0) rotate(-6deg); opacity:.06; }
-      50%{ opacity:.6; }
-      100%{ transform: translateY(-80vh) rotate(6deg); opacity:0; }
-    }
+/* Mensagem flutuante */
+.float-msg{
+  position:absolute;
+  color:var(--accent);
+  font-size:28px;
+  opacity:0.18;
+  animation:floatUp linear infinite;
+  pointer-events:none;
+}
+@keyframes floatUp{
+  from{transform:translateY(0)}
+  to{transform:translateY(-110vh)}
+}
 
-    /* bottom progress bar */
-    .bottom-bar{
-      position:fixed;
-      left:0;
-      right:0;
-      bottom:0;
-      height:6px;
-      background:rgba(255,255,255,.03);
-      z-index:10000;
-      display:none;
-    }
-    .bottom-bar.show{ display:block; }
-    .bottom-bar .fill{
-      height:100%;
-      width:0%;
-      background:linear-gradient(90deg, rgba(160,0,0,1), rgba(220,60,60,.9));
-      transition:width .1s linear;
-    }
+/* Barra de progresso inferior */
+.progress{
+  position:fixed;
+  bottom:0;
+  left:0;
+  height:6px;
+  width:0%;
+  background:var(--accent);
+  z-index:1000;
+}
 
-    /* success message */
-    .success{
-      color: #b7ffb7;
-      font-weight:700;
-      letter-spacing:1px;
-      font-size:18px;
-    }
+/* Botões utilitários */
+.controls{
+  display:flex;
+  gap:8px;
+  margin-top:6px;
+}
+.btn{
+  background:#111;
+  color:#ddd;
+  border:1px solid #333;
+  padding:6px 10px;
+  border-radius:8px;
+  cursor:pointer;
+  font-size:14px;
+}
+.btn:active{transform:translateY(1px)}
+.btn.secondary{background:#0b0b0b;border-color:#222}
 
-    /* small helper */
-    .note{ font-size:12px; color:#7a7a7a; margin-top:6px; }
-  </style>
+/* Status (para leitores de tela) */
+#status{position:fixed;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden}
+
+/* Preferência por menos movimento */
+@media (prefers-reduced-motion: reduce){
+  .glitch, .shake, .float-msg { animation: none !important; transition: none !important; }
+}
+</style>
 </head>
 <body>
-  <div class="wrap" onclick="document.getElementById('hiddenInput').focus()">
-    <div class="hint">3 chances</div>
 
-    <div class="password-line" aria-hidden="true" id="boxes">
-      <!-- 7 underlines (H e g e m o l = 7) -->
-      <div class="char" data-index="0"></div>
-      <div class="char" data-index="1"></div>
-      <div class="char" data-index="2"></div>
-      <div class="char" data-index="3"></div>
-      <div class="char" data-index="4"></div>
-      <div class="char" data-index="5"></div>
-      <div class="char" data-index="6"></div>
-    </div>
+<div class="wrap" id="wrap" aria-hidden="false">
+  <div class="glitch" aria-hidden="true">3 chances</div>
 
-    <input id="hiddenInput" type="password" maxlength="7" autocomplete="off" inputmode="latin"
-           aria-label="campo invisível para senha" />
-
-    <div class="status" id="status">Digite a senha (preste atenção: letras exatas)</div>
-    <div class="note">O campo é invisível — clique em qualquer lugar e comece a digitar.</div>
-
-    <div class="success" id="successMsg" style="display:none">Senha correta — Acesso liberado</div>
+  <div class="password-line" id="boxes" aria-hidden="true">
+    <!-- boxes geradas via JS -->
   </div>
 
-  <!-- overlay insults -->
-  <div class="insult-overlay" id="overlay">
-    <div class="insults" id="insultsContainer"></div>
+  <!-- input escondido visualmente, mas acessível -->
+  <label for="hiddenInput" class="sr-only">Campo de senha</label>
+  <input id="hiddenInput" class="sr-only" type="password" maxlength="7" aria-label="Digite a senha">
+
+  <div class="controls" aria-hidden="true">
+    <button class="btn" id="toggleSoundBtn" type="button">Ativar som</button>
+    <button class="btn secondary" id="resetBtn" type="button">Resetar tentativas</button>
   </div>
+</div>
 
-  <!-- progress bar -->
-  <div class="bottom-bar" id="progressWrap">
-    <div class="fill" id="progressFill"></div>
+<!-- Overlay para bloquear / mostrar mensagem -->
+<div class="overlay" id="overlay" role="dialog" aria-modal="true" aria-hidden="true">
+  <div>
+    <div id="overlayTitle" style="font-size:24px;margin-bottom:8px">Acesso Negado</div>
+    <div id="overlayDesc" style="color:var(--muted);margin-bottom:12px">Você atingiu o número máximo de tentativas. Aguarde...</div>
+    <div><button class="btn" id="closeOverlayBtn">Fechar</button></div>
   </div>
+</div>
 
-  <script>
-    (function(){
-      const PASSWORD = "Hegemol"; // senha exata (case-sensitive)
-      const INPUT = document.getElementById('hiddenInput');
-      const BOXES = Array.from(document.querySelectorAll('.char'));
-      const STATUS = document.getElementById('status');
-      const SUCCESS = document.getElementById('successMsg');
-      const OVERLAY = document.getElementById('overlay');
-      const INSULTS = document.getElementById('insultsContainer');
-      const PROGWRAP = document.getElementById('progressWrap');
-      const PROGFILL = document.getElementById('progressFill');
+<div class="progress" id="progress" aria-hidden="true"></div>
 
-      let attempts = 0;
-      let animTimeout = null;
-      let progressInterval = null;
+<!-- áudio (opcional) -->
+<audio id="creepyAudio" preload="none">
+  <source src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_115b9b2f45.mp3?filename=dark-glitch-110289.mp3" type="audio/mpeg">
+</audio>
 
-      // Populate random insults when needed (but keep them as plain text)
-      const WORDS = ["idiota", "desiste", "nem perde tempo tentando"];
+<!-- status para leitores de tela -->
+<div id="status" role="status" aria-live="polite"></div>
 
-      // keep focus ready
-      INPUT.focus();
+<script>
+/* ---------- CONFIGURAÇÃO ---------- */
+/* SHA-256 (hex) da senha "Hegemol" — calculado para a comparação client-side */
+const PASS_HASH = "f97ac9e04309ce602c5026a251aa2b4523523175ce13b3598399db03b263b4ac";
+/* Número máximo de tentativas antes do "caos" */
+const MAX_ATTEMPTS = 3;
 
-      function updateBoxes(value){
-        // Update underline visuals; characters themselves stay invisible (by design).
-        for(let i=0;i<BOXES.length;i++){
-          if(i < value.length){
-            BOXES[i].classList.add('filled');
-            BOXES[i].textContent = ""; // no visible char -> invisible field
-          } else {
-            BOXES[i].classList.remove('filled');
-            BOXES[i].textContent = "";
-          }
-        }
-      }
+/* ---------- NÓS DO DOM ---------- */
+const input = document.getElementById('hiddenInput');
+const boxesContainer = document.getElementById('boxes');
+const wrap = document.getElementById('wrap');
+const overlay = document.getElementById('overlay');
+const overlayTitle = document.getElementById('overlayTitle');
+const overlayDesc = document.getElementById('overlayDesc');
+const closeOverlayBtn = document.getElementById('closeOverlayBtn');
+const progress = document.getElementById('progress');
+const audio = document.getElementById('creepyAudio');
+const toggleSoundBtn = document.getElementById('toggleSoundBtn');
+const resetBtn = document.getElementById('resetBtn');
+const status = document.getElementById('status');
 
-      function handleWrongAttempt(){
-        attempts++;
-        STATUS.textContent = `Senha incorreta — tentativas: ${attempts} / 3`;
-        // shake animation
-        const line = document.querySelector('.password-line');
-        line.classList.remove('shake');
-        void line.offsetWidth;
-        line.classList.add('shake');
+let attempts = 0;
+let PASS_LEN = 7; // mantido separado para fácil alteração
 
-        // clear input after short delay so user can try again
-        setTimeout(()=>{ INPUT.value = ""; updateBoxes(""); INPUT.focus(); }, 250);
+/* ---------- Inicialização: criar as caixas visuais ---------- */
+function createBoxes(len){
+  boxesContainer.innerHTML = '';
+  for(let i=0;i<len;i++){
+    const d = document.createElement('div');
+    d.className = 'char';
+    boxesContainer.appendChild(d);
+  }
+}
+createBoxes(PASS_LEN);
 
-        if(attempts >= 3){
-          triggerInsults();
-        }
-      }
+/* Atualiza a marcação das caixas conforme o valor atual */
+function updateBoxes(val){
+  const boxes = boxesContainer.querySelectorAll('.char');
+  boxes.forEach((b,i)=>{
+    b.classList.toggle('filled', i < val.length);
+  });
+}
 
-      function triggerInsults(){
-        // build many floating insults
-        INSULTS.innerHTML = "";
-        const count = 36; // number of words on screen
-        const w = window.innerWidth;
-        const h = window.innerHeight;
-        for(let i=0;i<count;i++){
-          const span = document.createElement('span');
-          span.textContent = WORDS[i % WORDS.length];
-          // random position
-          const left = Math.random() * (w * 0.9);
-          const top = Math.random() * (h * 0.9);
-          const rot = (Math.random()*40)-20;
-          span.style.left = `${left}px`;
-          span.style.top = `${top}px`;
-          span.style.transform = `rotate(${rot}deg)`;
-          span.style.opacity = (0.04 + Math.random()*0.6).toString();
-          span.style.fontSize = `${14 + Math.random()*60}px`;
-          INSULTS.appendChild(span);
-        }
+/* Visual feedback de erro (shake) */
+function indicateError(){
+  wrap.classList.add('shake');
+  setTimeout(()=>wrap.classList.remove('shake'), 350);
+}
 
-        // show overlay and start bottom progress
-        OVERLAY.classList.add('show');
-        PROGWRAP.classList.add('show');
-        PROGFILL.style.width = '0%';
-        let percent = 0;
-        // increase 1% at a time
-        progressInterval = setInterval(()=>{
-          percent++;
-          PROGFILL.style.width = percent + '%';
-          if(percent >= 100){
-            clearInterval(progressInterval);
-            // hide everything after a short fade
-            setTimeout(()=> {
-              OVERLAY.classList.remove('show');
-              PROGWRAP.classList.remove('show');
-              INSULTS.innerHTML = "";
-              PROGFILL.style.width = '0%';
-              attempts = 0; // reset attempts after the sequence
-              STATUS.textContent = 'Você pode tentar novamente.';
-              INPUT.value = "";
-              updateBoxes("");
-              INPUT.focus();
-            }, 300);
-          }
-        }, 60); // ~6 seconds to reach 100% (60ms * 100). You can adjust timing here.
-      }
+/* Mostrar overlay com mensagem (acesso negado) */
+function showOverlay(title,desc){
+  overlayTitle.textContent = title;
+  overlayDesc.textContent = desc;
+  overlay.classList.add('show');
+  overlay.setAttribute('aria-hidden','false');
+}
 
-      function handleSuccess(){
-        SUCCESS.style.display = "block";
-        STATUS.style.display = "none";
-        // subtle success effect
-        BOXES.forEach(b=> b.style.borderBottomColor = "#b7ffb7");
-        // lock input
-        INPUT.blur();
-        INPUT.disabled = true;
-      }
+/* Fechar overlay */
+function hideOverlay(){
+  overlay.classList.remove('show');
+  overlay.setAttribute('aria-hidden','true');
+}
 
-      // input listening
-      INPUT.addEventListener('input', (e)=>{
-        const v = e.target.value;
-        // keep only max length
-        updateBoxes(v);
-        // When full length reached, validate
-        if(v.length === PASSWORD.length){
-          if(v === PASSWORD){
-            handleSuccess();
-          } else {
-            handleWrongAttempt();
-          }
-        }
-      });
+/* Gera mensagens flutuantes (sem conteúdo ofensivo) */
+function spawnFloatingMessages(count=24){
+  const frag = document.createDocumentFragment();
+  for(let i=0;i<count;i++){
+    const msg = document.createElement('div');
+    msg.className = 'float-msg';
+    msg.style.left = (Math.random()*100) + 'vw';
+    msg.style.top = (Math.random()*100) + 'vh';
+    msg.style.fontSize = (18 + Math.random()*60) + 'px';
+    msg.textContent = (i%2===0) ? "ACESSO NEGADO" : "TENTE NOVAMENTE";
+    frag.appendChild(msg);
+    // animação natural via CSS keyframes definida; serão removidos depois
+  }
+  overlay.appendChild(frag);
+}
 
-      // Allow Enter to submit early if user typed less than length
-      INPUT.addEventListener('keydown', (e)=>{
-        if(e.key === "Enter"){
-          const val = INPUT.value;
-          if(val.length === PASSWORD.length){
-            if(val === PASSWORD) handleSuccess();
-            else handleWrongAttempt();
-          } else {
-            // treat Enter as attempt only if non-empty
-            if(val.length > 0){
-              // pad or compare with same-length rule: require exact length, so this counts as wrong
-              handleWrongAttempt();
-            }
-          }
-          e.preventDefault();
-        }
-      });
+/* "Caos" — visual + som + barra de progresso */
+function triggerChaos(){
+  showOverlay('Acesso bloqueado', 'Número máximo de tentativas atingido.');
+  status.textContent = 'Acesso bloqueado devido a tentativas incorretas.';
+  spawnFloatingMessages(36);
 
-      // click anywhere focuses input
-      document.body.addEventListener('click', ()=> INPUT.focus());
-      // also ensure focus on load
-      window.addEventListener('load', ()=> INPUT.focus());
-    })();
-  </script>
-</body>
-</html>
+  // tocar áudio (se permitido)
+  tryPlayAudio();
 
+  // barra de progresso simples (tempo até reset)
+  let percent = 0;
+  progress.style.width = '0%';
+  progress.setAttribute('aria-hidden','false');
+  const step = 1; // % por tick
+  const interval = setInterval(()=>{
+    percent += step;
+    progress.style.width = percent + '%';
+    if(percent >= 100){
+      clearInterval(interval);
+      // reset visual e lógico
+      overlay.innerHTML = `
+        <div>
+          <div id="overlayTitle" style="font-size:24px;margin-bottom:8px">Pronto</div>
+          <div id="overlayDesc" style="color:var(--muted);margin-bottom:12px">Você pode tentar novamente.</div>
+          <div><button class="btn" id="closeOverlayBtn">Fechar</button></div>
+        </div>
+      `;
+      // reatribuir botão fechar dentro do novo conteúdo
+      const newClose = overlay.querySelector('#closeOverlayBtn');
+      if(newClose) newClose.addEventListener('click', ()=>{ hideOverlay(); cleanupAfterChaos(); });
+      progress.style.width = '0%';
+      progress.setAttribute('aria-hidden','true');
+    }
+  }, 50); // 50ms * 100 = 5s (ajuste aqui para maior/menor duração)
+}
 
+function cleanupAfterChaos(){
+  overlay.innerHTML = ''; // remove mensagens flutuantes
+  attempts = 0;
+  status.textContent = 'Tentativas resetadas.';
+  audio.pause();
+  audio.currentTime = 0;
+}
+
+/* Tratar tentativa errada */
+function wrongAttempt(){
+  attempts++;
+  indicateError();
+  input.value = '';
+  updateBoxes('');
+  status.textContent = `Tentativa incorreta. (${attempts}/${MAX_ATTEMPTS})`;
+
+  if(attempts >= MAX_ATTEMPTS){
+    triggerChaos();
+  }
+}
+
+/* ---------- UTIL: hash SHA-256 em hex (Web Crypto) ---------- */
+async function sha256Hex(message){
+  const enc = new TextEncoder();
+  const data = enc.encode(message);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+/* ---------- Áudio: tentativa de tocar com fallback ---------- */
+let audioEnabled = false;
+function tryPlayAudio(){
+  if(!audio) return;
+  audio.play().then(()=>{
+    audioEnabled = true;
+    toggleSoundBtn.textContent = 'Som ativo';
+  }).catch(()=> {
+    // autoplay bloqueado; pedir ação do usuário
+    audioEnabled = false;
+    toggleSoundBtn.textContent = 'Ativar som';
+  });
+}
+
+/* ---------- Eventos ---------- */
+
+/* clicar no wrap foca input (sem onclick inline) */
+wrap.addEventListener('click', ()=> input.focus());
+
+/* botão para ativar som manualmente */
+toggleSoundBtn.addEventListener('click', ()=>{
+  // tentar tocar diretamente com interação do usuário
+  audio.play().then(()=>{
+    audioEnabled = true;
+    toggleSoundBtn.textContent = 'Som ativo';
+  }).catch(()=>{
+    audioEnabled = false;
+    toggleSoundBtn.textContent = 'Ativar som';
+  });
+});
+
+/* botão de resetar tentativas */
+resetBtn.addEventListener('click', ()=>{
+  attempts = 0;
+  status.textContent = 'Tentativas resetadas manualmente.';
+});
+
+/* fechar overlay */
+closeOverlayBtn.addEventListener('click', ()=>{
+  hideOverlay();
+  cleanupAfterChaos();
+});
+
+/* principal: ao digitar */
+input.addEventListener('input', async (e)=>{
+  const val = e.target.value || '';
+  updateBoxes(val);
+  // quando atingir o comprimento esperado, verificar
+  if(val.length === PASS_LEN){
+    // calcula hash e compara
+    const h = await sha256Hex(val);
+    if(h === PASS_HASH){
+      // sucesso
+      status.textContent = 'Acesso liberado.';
+      alert('Acesso liberado — senha correta.');
+      // ação de sucesso: limpar, resetar contadores
+      input.value = '';
+      updateBoxes('');
+      attempts = 0;
+    }else{
+      // incorreto
+      wrongAttempt();
+    }
+  }
+});
+
+/* foco inicial */
+window.addEventListener('load', ()=> {
+  input.focus();
+  // tentar autoplay discreto (pode falhar)
+  tryPlayAudio();
+});
 </script>
+
 </body>
 </html>
