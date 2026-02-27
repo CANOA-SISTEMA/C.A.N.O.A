@@ -9,7 +9,7 @@
 html,body{
   height:100%;
   margin:0;
-  background:#001f8f; /* fundo azul */
+  background:#001f8f;
   color:#fff;
   font-family:monospace;
   overflow:hidden;
@@ -151,12 +151,17 @@ html,body{
   height:100%;
   background:#a020f0;
 }
+
+/* remove underline após falha */
+.no-underline .char{
+  border-bottom:none !important;
+}
 </style>
 </head>
 <body>
 
-<div class="wrap">
-  <div class="title"><span id="chanceNumber">3</span> CHANCES</div>
+<div class="wrap" id="wrap">
+  <div class="title" id="titleText">3 CHANCES</div>
   <div class="password-line" id="boxes"></div>
 </div>
 
@@ -175,7 +180,6 @@ html,body{
   </div>
 </div>
 
-<!-- AUDIO CORRETO -->
 <audio id="music" src="glitch.mp3" preload="auto"></audio>
 
 <script>
@@ -187,11 +191,12 @@ const input=document.getElementById("input");
 const boxes=document.getElementById("boxes");
 const glitch=document.getElementById("glitch");
 const symbol=document.getElementById("symbol");
-const chanceNumber=document.getElementById("chanceNumber");
 const downloadBox=document.getElementById("downloadBox");
 const percentText=document.getElementById("percentText");
 const barFill=document.getElementById("barFill");
 const music=document.getElementById("music");
+const wrap=document.getElementById("wrap");
+const titleText=document.getElementById("titleText");
 
 let attempts=0;
 
@@ -224,13 +229,10 @@ input.addEventListener("keydown",e=>{
 
     if(v.toLowerCase()===PASSWORD){
       alert("ACESSO LIBERADO");
-      resetGame();
       return;
     }
 
     attempts++;
-    chanceNumber.textContent=MAX_ATTEMPTS-attempts;
-
     input.value="";
     updateBoxes("");
 
@@ -241,13 +243,17 @@ input.addEventListener("keydown",e=>{
 });
 
 function activateChaos(){
+  input.disabled=true;
+
+  titleText.style.display="none"; // remove texto tentativas
+  wrap.classList.add("no-underline"); // remove underline
+
   glitch.classList.add("show");
   symbol.classList.add("show");
   downloadBox.classList.add("show");
-  input.disabled=true;
 
   music.currentTime=0;
-  music.play().catch(()=>{}); // pode falhar se navegador bloquear autoplay
+  music.play().catch(()=>{});
 
   animateDownload(15000);
 }
@@ -269,14 +275,6 @@ function animateDownload(duration){
   }
 
   requestAnimationFrame(step);
-}
-
-function resetGame(){
-  attempts=0;
-  chanceNumber.textContent="3";
-  input.disabled=false;
-  input.value="";
-  updateBoxes("");
 }
 </script>
 
