@@ -3,62 +3,16 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>3 chances</title>
+<title>Loading</title>
 
 <style>
 html,body{
   height:100%;
   margin:0;
-  background:#001f8f;
+  background:#000; /* fundo preto inicial */
   color:#fff;
   font-family:monospace;
   overflow:hidden;
-  cursor:text;
-}
-
-.wrap{
-  height:100%;
-  display:flex;
-  flex-direction:column;
-  justify-content:center;
-  align-items:center;
-  gap:25px;
-}
-
-.title{
-  font-size:32px;
-  text-shadow:2px 0 red,-2px 0 cyan;
-}
-
-.password-line{
-  display:flex;
-  gap:12px;
-}
-
-.char{
-  width:35px;
-  height:45px;
-  border-bottom:3px solid #444;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-size:20px;
-  color:transparent;
-}
-
-.char.filled{
-  border-bottom-color:#a020f0;
-  color:#a020f0;
-}
-
-#input{
-  position:fixed;
-  inset:0;
-  width:100%;
-  height:100%;
-  opacity:0;
-  border:none;
-  outline:none;
 }
 
 .glitch{
@@ -89,46 +43,17 @@ html,body{
   100%{transform:translate(0,0);opacity:.7}
 }
 
-.symbol{
-  position:fixed;
-  inset:0;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  pointer-events:none;
-  opacity:0;
-  z-index:30;
-}
-
-.symbol img{
-  width:250px;
-  animation:pulse 1s infinite alternate;
-}
-
-.symbol.show{
-  opacity:1;
-}
-
-@keyframes pulse{
-  from{opacity:.3;transform:scale(.9)}
-  to{opacity:1;transform:scale(1.1)}
-}
-
 .download-box{
   position:fixed;
-  bottom:60px;
+  bottom:80px;
   left:50%;
   transform:translateX(-50%);
   width:75%;
   max-width:900px;
-  display:none;
+  display:flex;
   flex-direction:column;
   gap:20px;
   z-index:40;
-}
-
-.download-box.show{
-  display:flex;
 }
 
 .percent{
@@ -136,6 +61,7 @@ html,body{
   font-weight:bold;
   color:#a020f0;
   text-shadow:0 0 20px #a020f0;
+  text-align:center;
 }
 
 .bar{
@@ -151,28 +77,13 @@ html,body{
   height:100%;
   background:#a020f0;
 }
-
-.no-underline .char{
-  border-bottom:none !important;
-}
 </style>
 </head>
 <body>
 
-<div class="wrap" id="wrap">
-  <div class="title" id="titleText">3 CHANCES</div>
-  <div class="password-line" id="boxes"></div>
-</div>
+<div class="glitch show" id="glitch"></div>
 
-<input id="input" type="password" maxlength="7">
-
-<div class="glitch" id="glitch"></div>
-
-<div class="symbol" id="symbol">
-  <img src="simbolo.png">
-</div>
-
-<div class="download-box" id="downloadBox">
+<div class="download-box">
   <div class="percent" id="percentText">0%</div>
   <div class="bar">
     <div class="bar-fill" id="barFill"></div>
@@ -182,96 +93,26 @@ html,body{
 <audio id="music" src="glitch.mp3" preload="auto"></audio>
 
 <script>
-const PASSWORD="hegemol";
-const LEN=7;
-const MAX_ATTEMPTS=3;
-
-const input=document.getElementById("input");
-const boxes=document.getElementById("boxes");
-const glitch=document.getElementById("glitch");
-const symbol=document.getElementById("symbol");
-const downloadBox=document.getElementById("downloadBox");
+const music=document.getElementById("music");
 const percentText=document.getElementById("percentText");
 const barFill=document.getElementById("barFill");
-const music=document.getElementById("music");
-const wrap=document.getElementById("wrap");
-const titleText=document.getElementById("titleText");
 
-let attempts=0;
+/* Desbloqueio de autoplay */
+document.addEventListener("click", startExperience, { once:true });
 
-document.body.addEventListener("mouseenter",()=>input.focus());
-document.addEventListener("keydown",()=>input.focus());
+function startExperience(){
+  music.currentTime=0;
 
-/* Desbloqueia o áudio na primeira interação */
-document.addEventListener("click",()=>{
   music.play().then(()=>{
-    music.pause();
-    music.currentTime=0;
-  }).catch(()=>{});
-},{once:true});
-
-for(let i=0;i<LEN;i++){
-  const d=document.createElement("div");
-  d.className="char";
-  boxes.appendChild(d);
-}
-
-function updateBoxes(v){
-  [...boxes.children].forEach((b,i)=>{
-    b.classList.toggle("filled",i<v.length);
-    b.textContent=i<v.length?"•":"";
+    syncWithAudio();
+  }).catch(err=>{
+    console.error("Erro ao tocar áudio:",err);
   });
 }
 
-input.addEventListener("input",e=>{
-  const val=e.target.value.slice(0,LEN);
-  e.target.value=val;
-  updateBoxes(val);
-});
+function syncWithAudio(){
+  const duration=music.duration * 1000;
 
-input.addEventListener("keydown",e=>{
-  if(e.key==="Enter"){
-    const v=input.value;
-    if(v.length!==LEN) return;
-
-    if(v.toLowerCase()===PASSWORD){
-      alert("ACESSO LIBERADO");
-      return;
-    }
-
-    attempts++;
-    input.value="";
-    updateBoxes("");
-
-    if(attempts>=MAX_ATTEMPTS){
-      activateChaos();
-    }
-  }
-});
-
-function activateChaos(){
-  input.disabled=true;
-
-  titleText.style.display="none";
-  wrap.classList.add("no-underline");
-
-  glitch.classList.add("show");
-  symbol.classList.add("show");
-  downloadBox.classList.add("show");
-
-  music.currentTime=0;
-
-  const playPromise=music.play();
-  if(playPromise!==undefined){
-    playPromise.catch(err=>{
-      console.error("Erro ao tocar áudio:",err);
-    });
-  }
-
-  animateDownload(15000);
-}
-
-function animateDownload(duration){
   let start=null;
 
   function step(timestamp){
