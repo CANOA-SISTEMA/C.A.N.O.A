@@ -23,12 +23,19 @@ html,body{
   justify-content:center;
   align-items:center;
   gap:25px;
+  transition:opacity .3s;
+}
+
+.wrap.hidden{
+  opacity:0;
+  pointer-events:none;
+  visibility:hidden;
 }
 
 .title{
   font-size:32px;
   text-shadow:2px 0 red,-2px 0 cyan;
-  text-transform:none; /* mantemos o texto como colocado (lowercase se desejar) */
+  text-transform:none;
 }
 
 /* linha de password */
@@ -45,11 +52,10 @@ html,body{
   align-items:center;
   justify-content:center;
   font-size:20px;
-  color:transparent; /* ocultamos o ponto por padrão */
+  color:transparent;
   transition: border-color .2s, color .2s;
 }
 
-/* quando preenchido (antes do chaos) mostramos com cor neutra (ex: branco) */
 .char.filled{
   border-bottom-color:#ddd;
   color:#ddd;
@@ -149,11 +155,40 @@ body.chaos .char.filled{
   height:100%;
   background:#a020f0;
 }
+
+/* símbolo que aparece ao acabar */
+.symbol{
+  display:none;
+  width:140px;
+  height:auto;
+  margin-top:18px;
+  z-index:50;
+  transition:opacity .25s, transform .25s;
+}
+
+.symbol.show{
+  display:block;
+  opacity:1;
+  transform:scale(1);
+  animation:symbolPop .35s ease;
+}
+
+@keyframes symbolPop{
+  0%{transform:scale(.6); opacity:0}
+  60%{transform:scale(1.08); opacity:1}
+  100%{transform:scale(1); opacity:1}
+}
+
+/* pequenas transições para algum fade-out */
+.fade-out{
+  transition:opacity .35s;
+  opacity:0;
+}
 </style>
 </head>
 <body>
 
-<div class="wrap">
+<div class="wrap" id="mainWrap">
   <div class="title" id="titleText">3 chances</div>
   <div class="password-line" id="boxes"></div>
 </div>
@@ -168,6 +203,9 @@ body.chaos .char.filled{
     <div class="bar-fill" id="barFill"></div>
   </div>
 </div>
+
+<!-- Simbolo que deve aparecer após acabar as chances -->
+<img id="symbol" class="symbol" src="simbolo.png" alt="símbolo">
 
 <audio id="music" src="glitch.mp3" preload="auto"></audio>
 
@@ -184,13 +222,15 @@ const percentText=document.getElementById("percentText");
 const barFill=document.getElementById("barFill");
 const music=document.getElementById("music");
 const titleText=document.getElementById("titleText");
+const symbol=document.getElementById("symbol");
+const mainWrap=document.getElementById("mainWrap");
 
 let attempts=0;
 
-/* garantir título inicial consistente */
+/* Título inicial */
 titleText.textContent = `${MAX_ATTEMPTS} chances`;
 
-/* autoplay permission trick (toca e pausa para liberar áudio em alguns navegadores) */
+/* tocar e pausar para liberar autoplay em alguns navegadores */
 document.addEventListener("click",()=>{
   music.play().then(()=>{
     music.pause();
@@ -219,7 +259,7 @@ input.addEventListener("input",e=>{
   updateBoxes(val);
 });
 
-/* função para atualizar texto das chances (mantendo a ordem pedida) */
+/* função para atualizar texto das chances */
 function updateTitleRemaining(remaining){
   if(remaining > 1){
     titleText.textContent = `${remaining} chances`;
@@ -230,6 +270,7 @@ function updateTitleRemaining(remaining){
   }
 }
 
+/* evento Enter para checar senha */
 input.addEventListener("keydown",e=>{
   if(e.key==="Enter"){
     const v=input.value;
@@ -256,29 +297,53 @@ input.addEventListener("keydown",e=>{
   }
 });
 
+/* Listener de erro para ajudar a identificar se o simbolo não carregar */
+symbol.addEventListener('error', ()=>{
+  console.warn('simbolo.png não foi encontrado no caminho indicado. Verifique o nome e o diretório.');
+  symbol.alt = '[simbolo não encontrado]';
+  // opcional: você pode simplesmente mostrar um texto ou algum fallback
+});
+
+/* Ativa toda a sequência final (roxo, shake, glitch, mostra símbolo) */
 function activateChaos(){
-  /* adiciona a classe chaos (que muda o fundo e os estilos dependentes) */
   document.body.classList.add("chaos");
-  /* aplica o shake visual */
   document.body.classList.add("shake");
 
-  /* mostra glitch e download box */
   glitch.classList.add("show");
   downloadBox.classList.add("show");
 
-  /* desativa o input para impedir novas tentativas */
   input.disabled = true;
 
-  /* atualiza texto final */
+  // mostra o símbolo
+  symbol.classList.add("show");
+
+  // atualiza texto final
   titleText.textContent = "acabou";
 
-  /* toca o áudio e sincroniza a barra */
+  // toca o áudio e sincroniza a barra
   music.currentTime=0;
   music.play().then(syncWithAudio).catch(()=>{});
+
+  // após X ms, fazer a "parte" sumir (downloadBox e glitch), mantendo o symbol visível
+  const HIDE_AFTER = 3800; // milissegundos, ajuste se quiser
+  setTimeout(()=>{
+    // sumir a downloadBox e glitch com transição
+    downloadBox.classList.remove("show");
+    glitch.classList.remove("show");
+
+    // remover shake e chaos se preferir (aqui removo só o shake, mantendo o fundo roxo)
+    document.body.classList.remove("shake");
+
+    // opcional: esconder a interface principal (wrap) também
+    mainWrap.classList.add('hidden');
+
+    // manter o símbolo visível no centro — você pode ajustar posição via CSS se necessário
+  }, HIDE_AFTER);
 }
 
+/* Sincroniza barra com duração do áudio (fallback caso duration não esteja disponível) */
 function syncWithAudio(){
-  const duration = (music.duration && !isNaN(music.duration)) ? music.duration*1000 : 5000; // fallback 5s
+  const duration = (music.duration && !isNaN(music.duration)) ? music.duration*1000 : 4500;
   let start=null;
 
   function step(timestamp){
