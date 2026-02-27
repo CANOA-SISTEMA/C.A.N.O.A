@@ -3,243 +3,220 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Sistema</title>
+<title>3 chances</title>
 
 <style>
 html,body{
-  margin:0;
   height:100%;
+  margin:0;
   background:#000;
   color:#fff;
   font-family:monospace;
   overflow:hidden;
+  cursor:text;
 }
 
-/* LOGIN */
-#loginScreen{
-  position:fixed;
-  inset:0;
+/* ===== CENTRO ===== */
+.wrap{
+  height:100%;
   display:flex;
   flex-direction:column;
   justify-content:center;
   align-items:center;
   gap:25px;
-  background:#000;
-  z-index:50;
 }
 
 .title{
-  font-size:28px;
+  font-size:32px;
+  text-shadow:2px 0 red,-2px 0 cyan;
 }
 
 .password-line{
   display:flex;
-  gap:10px;
+  gap:12px;
 }
 
 .char{
   width:35px;
   height:45px;
   border-bottom:3px solid #444;
-  text-align:center;
+  display:flex;
+  align-items:center;
+  justify-content:center;
   font-size:20px;
-  transition:.3s;
+  color:transparent;
 }
 
 .char.filled{
-  border-color:#a020f0;
+  border-bottom-color:#a020f0;
   color:#a020f0;
 }
 
 #input{
   position:fixed;
   inset:0;
+  width:100%;
+  height:100%;
   opacity:0;
   border:none;
   outline:none;
 }
 
-/* VIDEO FUNDO */
-#videoBackground{
-  position:fixed;
-  inset:0;
-  display:none;
-  z-index:20;
-  background:black;
-}
-
-#videoBackground video{
-  position:absolute;
-  width:100%;
-  height:100%;
-  object-fit:cover;
-}
-
-/* SIMBOLO */
-#symbol{
+/* ===== SÍMBOLO ===== */
+.symbol{
   position:fixed;
   inset:0;
   display:flex;
-  justify-content:center;
   align-items:center;
+  justify-content:center;
+  pointer-events:none;
   opacity:0;
-  z-index:60;
-  pointer-events:none;
+  z-index:30;
 }
 
-#symbol img{
-  width:600px;
-  pointer-events:none;
-  user-select:none;
+.symbol img{
+  width:250px;
+  filter:drop-shadow(0 0 30px #a020f0);
+  animation:pulse 1s infinite alternate;
 }
 
-/* DOWNLOAD */
-#download{
+.symbol.show{
+  opacity:1;
+}
+
+@keyframes pulse{
+  from{transform:scale(.9);opacity:.6}
+  to{transform:scale(1.1);opacity:1}
+}
+
+/* ===== LUZ ROXA EXPANDINDO ===== */
+.purple-expansion{
   position:fixed;
-  bottom:50px;
+  inset:0;
+  background:radial-gradient(circle at center,
+    rgba(160,32,240,.9) 0%,
+    rgba(160,32,240,.6) 20%,
+    rgba(160,32,240,.3) 40%,
+    rgba(0,0,0,1) 70%);
+  opacity:0;
+  z-index:25;
+  pointer-events:none;
+}
+
+.purple-expansion.expand{
+  animation:expandLight 6s forwards;
+}
+
+@keyframes expandLight{
+  0%{
+    opacity:0;
+    background-size:0% 0%;
+  }
+  20%{
+    opacity:1;
+  }
+  100%{
+    opacity:1;
+    background:radial-gradient(circle at center,
+      rgba(160,32,240,1) 0%,
+      rgba(160,32,240,1) 40%,
+      rgba(160,32,240,1) 80%);
+  }
+}
+
+/* ===== DOWNLOAD ===== */
+.download-box{
+  position:fixed;
+  bottom:60px;
   left:50%;
   transform:translateX(-50%);
-  width:70%;
+  width:75%;
+  max-width:900px;
   display:none;
   flex-direction:column;
-  gap:15px;
-  z-index:80;
+  gap:20px;
+  z-index:40;
 }
 
-#percent{
-  font-size:45px;
+.download-box.show{
+  display:flex;
+}
+
+.percent{
+  font-size:70px;
+  font-weight:bold;
   color:#a020f0;
-  text-align:center;
+  text-shadow:0 0 20px #a020f0;
 }
 
 .bar{
   width:100%;
-  height:35px;
-  border:3px solid #a020f0;
+  height:45px;
+  border:4px solid #a020f0;
+  padding:6px;
+  box-shadow:0 0 25px #a020f0;
 }
 
-.fill{
-  height:100%;
+.bar-fill{
   width:0%;
-  background:#a020f0;
-}
-
-/* PALAVRAS */
-.insult{
-  position:fixed;
-  color:#a020f0;
-  font-weight:bold;
-  pointer-events:none;
-  z-index:90;
-  animation:glitchText .15s infinite alternate;
-}
-
-@keyframes glitchText{
-  from{ transform:translate(0,0); opacity:0.7; }
-  to{ transform:translate(4px,-4px); opacity:1; }
-}
-
-/* SISTEMA */
-#system{
-  display:none;
   height:100%;
-  background:#111;
-  overflow:auto;
-  padding:20px;
-}
-
-.folder{
-  border:2px solid #a020f0;
-  padding:10px;
-  margin-bottom:20px;
-}
-
-textarea{
-  width:100%;
-  height:120px;
-  background:#000;
-  color:#a020f0;
-  border:1px solid #a020f0;
-  margin-top:10px;
-}
-
-img.noteImage{
-  max-width:200px;
-  display:block;
-  margin-top:10px;
+  background:#a020f0;
 }
 </style>
 </head>
 <body>
 
-<!-- LOGIN -->
-<div id="loginScreen">
+<div class="wrap">
   <div class="title"><span id="chanceNumber">3</span> CHANCES</div>
   <div class="password-line" id="boxes"></div>
 </div>
 
 <input id="input" type="password" maxlength="7">
 
-<!-- VIDEO FUNDO -->
-<div id="videoBackground">
-  <video id="bgVideo" loop muted playsinline>
-    <video src="./gif.mp4" width="300" controls></video>
-  </video>
+<div class="purple-expansion" id="purpleExpansion"></div>
+
+<div class="symbol" id="symbol">
+  <img src="simbolo.png">
 </div>
 
-<!-- SIMBOLO -->
-<div id="symbol">
-  <img src="./simbolo.png">
+<div class="download-box" id="downloadBox">
+  <div class="percent" id="percentText">0%</div>
+  <div class="bar">
+    <div class="bar-fill" id="barFill"></div>
+  </div>
 </div>
 
-<!-- DOWNLOAD -->
-<div id="download">
-  <div id="percent">0%</div>
-  <div class="bar"><div class="fill" id="fill"></div></div>
-</div>
-
-<!-- SISTEMA -->
-<div id="system">
-  <h2>SISTEMA DE BLOCOS</h2>
-  <button onclick="createFolder()">Criar Pasta</button>
-  <div id="folders"></div>
-</div>
+<audio id="music" src="glitch.mp3" preload="auto"></audio>
 
 <script>
 const PASSWORD="hegemol";
 const LEN=7;
-const MAX=3;
+const MAX_ATTEMPTS=3;
 
 const input=document.getElementById("input");
 const boxes=document.getElementById("boxes");
 const symbol=document.getElementById("symbol");
-const videoBackground=document.getElementById("videoBackground");
-const bgVideo=document.getElementById("bgVideo");
-const download=document.getElementById("download");
-const percent=document.getElementById("percent");
-const fill=document.getElementById("fill");
-const loginScreen=document.getElementById("loginScreen");
-const system=document.getElementById("system");
+const purpleExpansion=document.getElementById("purpleExpansion");
+const chanceNumber=document.getElementById("chanceNumber");
+const downloadBox=document.getElementById("downloadBox");
+const percentText=document.getElementById("percentText");
+const barFill=document.getElementById("barFill");
+const music=document.getElementById("music");
 
 let attempts=0;
 
-/* DESBLOQUEIA AUTOPLAY NO CHROME */
-document.addEventListener("click",()=>{
-  bgVideo.play().catch(()=>{});
-},{once:true});
+/* foco desktop */
+document.body.addEventListener("mouseenter",()=>input.focus());
+document.addEventListener("keydown",()=>input.focus());
 
-/* FOCO */
-document.addEventListener("mousemove",()=>input.focus());
-document.addEventListener("touchstart",()=>input.focus());
-
-/* CAIXAS */
+/* criar caixas */
 for(let i=0;i<LEN;i++){
   const d=document.createElement("div");
   d.className="char";
   boxes.appendChild(d);
 }
 
-function update(v){
+function updateBoxes(v){
   [...boxes.children].forEach((b,i)=>{
     b.classList.toggle("filled",i<v.length);
     b.textContent=i<v.length?"•":"";
@@ -247,120 +224,71 @@ function update(v){
 }
 
 input.addEventListener("input",e=>{
-  const v=e.target.value.slice(0,LEN);
-  e.target.value=v;
-  update(v);
+  const val=e.target.value.slice(0,LEN);
+  e.target.value=val;
+  updateBoxes(val);
 });
 
 input.addEventListener("keydown",e=>{
   if(e.key==="Enter"){
-    if(input.value.toLowerCase()===PASSWORD){
-      openSystem();
-    }else{
-      attempts++;
-      document.getElementById("chanceNumber").textContent=MAX-attempts;
-      input.value="";
-      update("");
-      if(attempts>=MAX) chaos();
+    const v=input.value;
+    if(v.length!==LEN) return;
+
+    if(v.toLowerCase()===PASSWORD){
+      alert("ACESSO LIBERADO");
+      resetGame();
+      return;
+    }
+
+    attempts++;
+    chanceNumber.textContent=MAX_ATTEMPTS-attempts;
+
+    input.value="";
+    updateBoxes("");
+
+    if(attempts>=MAX_ATTEMPTS){
+      activateChaos();
     }
   }
 });
 
-/* PALAVRAS */
-function spawnInsults(){
-  for(let i=0;i<70;i++){
-    const txt=document.createElement("div");
-    txt.className="insult";
-    txt.textContent="IDIOTA";
-    txt.style.left=Math.random()*100+"vw";
-    txt.style.top=Math.random()*100+"vh";
-    txt.style.fontSize=(Math.random()*40+15)+"px";
-    document.body.appendChild(txt);
-  }
-}
-
-/* ERRO FINAL */
-function chaos(){
-
-  spawnInsults();
-
-  /* SUMIR UNDERLINES */
-  document.querySelectorAll(".char").forEach(c=>{
-    c.style.borderBottom="none";
-    c.textContent="";
-  });
-
-  videoBackground.style.display="block";
-
-  bgVideo.currentTime=0;
-  bgVideo.play().catch(()=>{});
-
-  symbol.style.opacity=1;
-  download.style.display="flex";
+function activateChaos(){
+  symbol.classList.add("show");
+  purpleExpansion.classList.add("expand");
+  downloadBox.classList.add("show");
   input.disabled=true;
 
-  let p=0;
-  let interval=setInterval(()=>{
-    p++;
-    fill.style.width=p+"%";
-    percent.textContent=p+"%";
+  music.currentTime=0;
+  music.play().catch(()=>{});
 
-    if(p>=100){
-      clearInterval(interval);
-      setTimeout(()=>{
-        document.body.innerHTML="";
-        document.body.style.background="#000";
-      },1000);
+  animateDownload(15000);
+}
+
+function animateDownload(duration){
+  let start=null;
+
+  function step(timestamp){
+    if(!start) start=timestamp;
+    const elapsed=timestamp-start;
+    const percent=Math.min((elapsed/duration)*100,100);
+
+    barFill.style.width=percent+"%";
+    percentText.textContent=Math.floor(percent)+"%";
+
+    if(elapsed<duration){
+      requestAnimationFrame(step);
     }
+  }
 
-  },80);
+  requestAnimationFrame(step);
 }
 
-/* SUCESSO */
-function openSystem(){
-  loginScreen.style.display="none";
-  input.style.display="none";
-  document.body.style.overflow="auto";
-  system.style.display="block";
-}
-
-/* SISTEMA */
-function createFolder(){
-  const name=prompt("Nome da pasta:");
-  if(!name) return;
-
-  const folder=document.createElement("div");
-  folder.className="folder";
-  folder.innerHTML=`
-    <h3>${name}</h3>
-    <button onclick="addNote(this)">Novo Bloco</button>
-    <div class="notes"></div>
-  `;
-  document.getElementById("folders").appendChild(folder);
-}
-
-function addNote(btn){
-  const container=btn.nextElementSibling;
-  const area=document.createElement("textarea");
-
-  area.addEventListener("paste",function(e){
-    const items=e.clipboardData.items;
-    for(let item of items){
-      if(item.type.indexOf("image")!==-1){
-        const file=item.getAsFile();
-        const reader=new FileReader();
-        reader.onload=function(ev){
-          const img=document.createElement("img");
-          img.src=ev.target.result;
-          img.className="noteImage";
-          container.appendChild(img);
-        };
-        reader.readAsDataURL(file);
-      }
-    }
-  });
-
-  container.appendChild(area);
+function resetGame(){
+  attempts=0;
+  chanceNumber.textContent="3";
+  input.disabled=false;
+  input.value="";
+  updateBoxes("");
 }
 </script>
 
