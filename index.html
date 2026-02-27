@@ -9,7 +9,7 @@
 html,body{
   height:100%;
   margin:0;
-  background:#000; /* PRETO INICIAL */
+  background:#000; /* GARANTIDO PRETO */
   color:#fff;
   font-family:monospace;
   overflow:hidden;
@@ -88,6 +88,19 @@ html,body{
   100%{transform:translate(0,0);opacity:.7}
 }
 
+/* SHAKE */
+.shake{
+  animation:shakeScreen .1s infinite;
+}
+
+@keyframes shakeScreen{
+  0%{transform:translate(0,0);}
+  25%{transform:translate(-8px,5px);}
+  50%{transform:translate(8px,-5px);}
+  75%{transform:translate(-5px,3px);}
+  100%{transform:translate(0,0);}
+}
+
 .download-box{
   position:fixed;
   bottom:80px;
@@ -130,7 +143,7 @@ html,body{
 </head>
 <body>
 
-<div class="wrap" id="wrap">
+<div class="wrap">
   <div class="title" id="titleText">3 CHANCES</div>
   <div class="password-line" id="boxes"></div>
 </div>
@@ -210,22 +223,22 @@ input.addEventListener("keydown",e=>{
       titleText.textContent = remaining===1 ? "1 CHANCE" : remaining+" CHANCES";
     }
 
-    if(attempts>=MAX_ATTEMPTS){
+    if(attempts===MAX_ATTEMPTS){
       activateChaos();
     }
   }
 });
 
 function activateChaos(){
-  document.body.style.background="#2b0033"; /* ROXO APENAS AQUI */
+  document.body.style.background="#2b0033"; /* roxo somente aqui */
+
+  document.body.classList.add("shake"); /* treme */
 
   glitch.classList.add("show");
   downloadBox.classList.add("show");
 
   music.currentTime=0;
-  music.play().then(()=>{
-    syncWithAudio();
-  }).catch(()=>{});
+  music.play().then(syncWithAudio).catch(()=>{});
 }
 
 function syncWithAudio(){
