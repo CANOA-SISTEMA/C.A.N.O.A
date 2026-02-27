@@ -52,6 +52,7 @@ html,body{
   color:#a020f0;
 }
 
+/* INPUT invisível */
 #input{
   position:fixed;
   inset:0;
@@ -60,6 +61,35 @@ html,body{
   opacity:0;
   border:none;
   outline:none;
+}
+
+/* ===== GLITCH PESADO ===== */
+.glitch{
+  position:fixed;
+  inset:0;
+  background:
+    repeating-linear-gradient(
+      0deg,
+      rgba(255,0,0,.2) 0px,
+      rgba(0,255,255,.2) 2px,
+      transparent 4px
+    );
+  mix-blend-mode:screen;
+  pointer-events:none;
+  opacity:0;
+  z-index:20;
+}
+
+.glitch.show{
+  animation:glitchHeavy .08s infinite;
+}
+
+@keyframes glitchHeavy{
+  0%{transform:translate(0,0);opacity:.2}
+  25%{transform:translate(-5px,3px);opacity:.6}
+  50%{transform:translate(5px,-3px);opacity:.8}
+  75%{transform:translate(-3px,2px);opacity:.5}
+  100%{transform:translate(0,0);opacity:.7}
 }
 
 /* ===== SÍMBOLO ===== */
@@ -76,7 +106,6 @@ html,body{
 
 .symbol img{
   width:250px;
-  filter:drop-shadow(0 0 30px #a020f0);
   animation:pulse 1s infinite alternate;
 }
 
@@ -85,46 +114,11 @@ html,body{
 }
 
 @keyframes pulse{
-  from{transform:scale(.9);opacity:.6}
-  to{transform:scale(1.1);opacity:1}
+  from{opacity:.3;transform:scale(.9)}
+  to{opacity:1;transform:scale(1.1)}
 }
 
-/* ===== LUZ ROXA EXPANDINDO ===== */
-.purple-expansion{
-  position:fixed;
-  inset:0;
-  background:radial-gradient(circle at center,
-    rgba(160,32,240,.9) 0%,
-    rgba(160,32,240,.6) 20%,
-    rgba(160,32,240,.3) 40%,
-    rgba(0,0,0,1) 70%);
-  opacity:0;
-  z-index:25;
-  pointer-events:none;
-}
-
-.purple-expansion.expand{
-  animation:expandLight 6s forwards;
-}
-
-@keyframes expandLight{
-  0%{
-    opacity:0;
-    background-size:0% 0%;
-  }
-  20%{
-    opacity:1;
-  }
-  100%{
-    opacity:1;
-    background:radial-gradient(circle at center,
-      rgba(160,32,240,1) 0%,
-      rgba(160,32,240,1) 40%,
-      rgba(160,32,240,1) 80%);
-  }
-}
-
-/* ===== DOWNLOAD ===== */
+/* ===== DOWNLOAD ROXO ===== */
 .download-box{
   position:fixed;
   bottom:60px;
@@ -173,9 +167,10 @@ html,body{
 
 <input id="input" type="password" maxlength="7">
 
-<div class="purple-expansion" id="purpleExpansion"></div>
+<div class="glitch" id="glitch"></div>
 
 <div class="symbol" id="symbol">
+  <!-- coloque o nome exato do arquivo da imagem aqui -->
   <img src="simbolo.png">
 </div>
 
@@ -195,8 +190,8 @@ const MAX_ATTEMPTS=3;
 
 const input=document.getElementById("input");
 const boxes=document.getElementById("boxes");
+const glitch=document.getElementById("glitch");
 const symbol=document.getElementById("symbol");
-const purpleExpansion=document.getElementById("purpleExpansion");
 const chanceNumber=document.getElementById("chanceNumber");
 const downloadBox=document.getElementById("downloadBox");
 const percentText=document.getElementById("percentText");
@@ -253,8 +248,8 @@ input.addEventListener("keydown",e=>{
 });
 
 function activateChaos(){
+  glitch.classList.add("show");
   symbol.classList.add("show");
-  purpleExpansion.classList.add("expand");
   downloadBox.classList.add("show");
   input.disabled=true;
 
