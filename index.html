@@ -9,7 +9,7 @@
 html,body{
   height:100%;
   margin:0;
-  background:#000;
+  background:#001f8f; /* fundo azul */
   color:#fff;
   font-family:monospace;
   overflow:hidden;
@@ -175,10 +175,8 @@ html,body{
   </div>
 </div>
 
-<!-- MP4 COMO ÁUDIO -->
-<video id="music" preload="auto" style="display:none">
-  <source src="glitch.mp4" type="video/mp4">
-</video>
+<!-- AUDIO CORRETO -->
+<audio id="music" src="glitch.mp3" preload="auto"></audio>
 
 <script>
 const PASSWORD="hegemol";
@@ -249,7 +247,7 @@ function activateChaos(){
   input.disabled=true;
 
   music.currentTime=0;
-  music.play().catch(()=>{}); // necessário por causa de políticas do navegador
+  music.play().catch(()=>{}); // pode falhar se navegador bloquear autoplay
 
   animateDownload(15000);
 }
