@@ -9,10 +9,11 @@
 html,body{
   height:100%;
   margin:0;
-  background:#000; /* GARANTIDO PRETO */
+  background:#000; /* fundo escuro inicial */
   color:#fff;
   font-family:monospace;
   overflow:hidden;
+  transition:background .35s ease;
 }
 
 .wrap{
@@ -27,8 +28,10 @@ html,body{
 .title{
   font-size:32px;
   text-shadow:2px 0 red,-2px 0 cyan;
+  text-transform:none; /* mantemos o texto como colocado (lowercase se desejar) */
 }
 
+/* linha de password */
 .password-line{
   display:flex;
   gap:12px;
@@ -42,24 +45,27 @@ html,body{
   align-items:center;
   justify-content:center;
   font-size:20px;
-  color:transparent;
+  color:transparent; /* ocultamos o ponto por padrão */
+  transition: border-color .2s, color .2s;
 }
 
+/* quando preenchido (antes do chaos) mostramos com cor neutra (ex: branco) */
 .char.filled{
+  border-bottom-color:#ddd;
+  color:#ddd;
+}
+
+/* estilos aplicados SÓ quando a página estiver em "chaos" (após a última tentativa) */
+body.chaos{
+  background:#2b0033; /* roxo apenas quando chaos ativo */
+}
+
+body.chaos .char.filled{
   border-bottom-color:#a020f0;
   color:#a020f0;
 }
 
-#input{
-  position:fixed;
-  inset:0;
-  width:100%;
-  height:100%;
-  opacity:0;
-  border:none;
-  outline:none;
-}
-
+/* glitch overlay */
 .glitch{
   position:fixed;
   inset:0;
@@ -74,10 +80,12 @@ html,body{
   pointer-events:none;
   opacity:0;
   z-index:20;
+  transition:opacity .15s;
 }
 
 .glitch.show{
   animation:glitchHeavy .08s infinite;
+  opacity:1;
 }
 
 @keyframes glitchHeavy{
@@ -88,7 +96,7 @@ html,body{
   100%{transform:translate(0,0);opacity:.7}
 }
 
-/* SHAKE */
+/* SHAKE (aplicado junto com chaos) */
 .shake{
   animation:shakeScreen .1s infinite;
 }
@@ -101,6 +109,7 @@ html,body{
   100%{transform:translate(0,0);}
 }
 
+/* download box (aparece só no caos) */
 .download-box{
   position:fixed;
   bottom:80px;
@@ -112,6 +121,7 @@ html,body{
   flex-direction:column;
   gap:20px;
   z-index:40;
+  pointer-events:none;
 }
 
 .download-box.show{
@@ -144,11 +154,11 @@ html,body{
 <body>
 
 <div class="wrap">
-  <div class="title" id="titleText">3 CHANCES</div>
+  <div class="title" id="titleText">3 chances</div>
   <div class="password-line" id="boxes"></div>
 </div>
 
-<input id="input" type="password" maxlength="7">
+<input id="input" type="password" maxlength="7" autocomplete="off" autocapitalize="off">
 
 <div class="glitch" id="glitch"></div>
 
@@ -177,6 +187,10 @@ const titleText=document.getElementById("titleText");
 
 let attempts=0;
 
+/* garantir título inicial consistente */
+titleText.textContent = `${MAX_ATTEMPTS} chances`;
+
+/* autoplay permission trick (toca e pausa para liberar áudio em alguns navegadores) */
 document.addEventListener("click",()=>{
   music.play().then(()=>{
     music.pause();
@@ -184,6 +198,7 @@ document.addEventListener("click",()=>{
   }).catch(()=>{});
 },{once:true});
 
+/* criar os boxes */
 for(let i=0;i<LEN;i++){
   const d=document.createElement("div");
   d.className="char";
@@ -191,9 +206,10 @@ for(let i=0;i<LEN;i++){
 }
 
 function updateBoxes(v){
+  const length = v ? v.length : 0;
   [...boxes.children].forEach((b,i)=>{
-    b.classList.toggle("filled",i<v.length);
-    b.textContent=i<v.length?"•":"";
+    b.classList.toggle("filled", i < length);
+    b.textContent = i < length ? "•" : "";
   });
 }
 
@@ -202,6 +218,17 @@ input.addEventListener("input",e=>{
   e.target.value=val;
   updateBoxes(val);
 });
+
+/* função para atualizar texto das chances (mantendo a ordem pedida) */
+function updateTitleRemaining(remaining){
+  if(remaining > 1){
+    titleText.textContent = `${remaining} chances`;
+  } else if(remaining === 1){
+    titleText.textContent = `1 chance`;
+  } else {
+    titleText.textContent = `0 chances`;
+  }
+}
 
 input.addEventListener("keydown",e=>{
   if(e.key==="Enter"){
@@ -219,8 +246,8 @@ input.addEventListener("keydown",e=>{
 
     const remaining=MAX_ATTEMPTS-attempts;
 
-    if(remaining>0){
-      titleText.textContent = remaining===1 ? "1 CHANCE" : remaining+" CHANCES";
+    if(remaining >= 0){
+      updateTitleRemaining(remaining);
     }
 
     if(attempts===MAX_ATTEMPTS){
@@ -230,19 +257,28 @@ input.addEventListener("keydown",e=>{
 });
 
 function activateChaos(){
-  document.body.style.background="#2b0033"; /* roxo somente aqui */
+  /* adiciona a classe chaos (que muda o fundo e os estilos dependentes) */
+  document.body.classList.add("chaos");
+  /* aplica o shake visual */
+  document.body.classList.add("shake");
 
-  document.body.classList.add("shake"); /* treme */
-
+  /* mostra glitch e download box */
   glitch.classList.add("show");
   downloadBox.classList.add("show");
 
+  /* desativa o input para impedir novas tentativas */
+  input.disabled = true;
+
+  /* atualiza texto final */
+  titleText.textContent = "acabou";
+
+  /* toca o áudio e sincroniza a barra */
   music.currentTime=0;
   music.play().then(syncWithAudio).catch(()=>{});
 }
 
 function syncWithAudio(){
-  const duration=music.duration*1000;
+  const duration = (music.duration && !isNaN(music.duration)) ? music.duration*1000 : 5000; // fallback 5s
   let start=null;
 
   function step(timestamp){
