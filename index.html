@@ -15,7 +15,7 @@ html,body{
   overflow:hidden;
 }
 
-/* ===== LOGIN ===== */
+/* LOGIN */
 #loginScreen{
   position:fixed;
   inset:0;
@@ -58,7 +58,7 @@ html,body{
   outline:none;
 }
 
-/* ===== SIMBOLO ===== */
+/* SIMBOLO */
 #symbol{
   position:fixed;
   inset:0;
@@ -66,39 +66,23 @@ html,body{
   justify-content:center;
   align-items:center;
   opacity:0;
-  z-index:60;
+  z-index:70;
 }
 
 #symbol img{
-  width:250px;
+  width:500px;
 }
 
-/* ===== LUZ ROXA ===== */
-#purple{
+/* FUNDO GIF */
+#gifBackground{
   position:fixed;
   inset:0;
-  background:radial-gradient(circle at center,
-    rgba(160,32,240,1) 0%,
-    rgba(160,32,240,0.8) 30%,
-    rgba(0,0,0,1) 70%);
-  opacity:0;
+  background:url("fundo.gif") center center / cover no-repeat;
+  display:none;
   z-index:55;
 }
 
-#purple.expand{
-  animation:expand 6s forwards;
-}
-
-@keyframes expand{
-  0%{opacity:0;}
-  20%{opacity:1;}
-  100%{
-    opacity:1;
-    background:#a020f0;
-  }
-}
-
-/* ===== DOWNLOAD ===== */
+/* DOWNLOAD */
 #download{
   position:fixed;
   bottom:50px;
@@ -108,7 +92,7 @@ html,body{
   display:none;
   flex-direction:column;
   gap:15px;
-  z-index:70;
+  z-index:80;
 }
 
 #percent{
@@ -129,7 +113,22 @@ html,body{
   background:#a020f0;
 }
 
-/* ===== SISTEMA ===== */
+/* PALAVRAS */
+.insult{
+  position:fixed;
+  color:#a020f0;
+  font-weight:bold;
+  pointer-events:none;
+  z-index:90;
+  animation:glitchText .15s infinite alternate;
+}
+
+@keyframes glitchText{
+  from{ transform:translate(0,0); opacity:0.7; }
+  to{ transform:translate(4px,-4px); opacity:1; }
+}
+
+/* SISTEMA */
 #system{
   display:none;
   height:100%;
@@ -175,7 +174,7 @@ img.noteImage{
   <img src="simbolo.png">
 </div>
 
-<div id="purple"></div>
+<div id="gifBackground"></div>
 
 <div id="download">
   <div id="percent">0%</div>
@@ -197,7 +196,7 @@ const MAX=3;
 const input=document.getElementById("input");
 const boxes=document.getElementById("boxes");
 const symbol=document.getElementById("symbol");
-const purple=document.getElementById("purple");
+const gifBackground=document.getElementById("gifBackground");
 const download=document.getElementById("download");
 const percent=document.getElementById("percent");
 const fill=document.getElementById("fill");
@@ -206,11 +205,11 @@ const system=document.getElementById("system");
 
 let attempts=0;
 
-/* FOCO AUTOMÁTICO */
+/* FOCO */
 document.addEventListener("mousemove",()=>input.focus());
 document.addEventListener("touchstart",()=>input.focus());
 
-/* CRIAR CAIXAS */
+/* CAIXAS */
 for(let i=0;i<LEN;i++){
   const d=document.createElement("div");
   d.className="char";
@@ -244,10 +243,26 @@ input.addEventListener("keydown",e=>{
   }
 });
 
+/* PALAVRAS */
+function spawnInsults(){
+  for(let i=0;i<70;i++){
+    const txt=document.createElement("div");
+    txt.className="insult";
+    txt.textContent="IDIOTA";
+    txt.style.left=Math.random()*100+"vw";
+    txt.style.top=Math.random()*100+"vh";
+    txt.style.fontSize=(Math.random()*40+15)+"px";
+    document.body.appendChild(txt);
+  }
+}
+
 /* ERRO FINAL */
 function chaos(){
+
+  spawnInsults();
+
+  gifBackground.style.display="block";
   symbol.style.opacity=1;
-  purple.classList.add("expand");
   download.style.display="flex";
   input.disabled=true;
 
@@ -256,6 +271,7 @@ function chaos(){
     p++;
     fill.style.width=p+"%";
     percent.textContent=p+"%";
+
     if(p>=100){
       clearInterval(interval);
       setTimeout(()=>{
@@ -263,6 +279,7 @@ function chaos(){
         document.body.style.background="#000";
       },1000);
     }
+
   },80);
 }
 
