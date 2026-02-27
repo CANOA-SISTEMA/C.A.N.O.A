@@ -8,7 +8,6 @@
 <style>
 :root{
   --bg:#000;
-  --accent:#fff;
 }
 
 html,body{
@@ -18,6 +17,7 @@ html,body{
   color:#fff;
   font-family:monospace;
   overflow:hidden;
+  cursor:text; /* deixa claro que pode digitar */
 }
 
 .wrap{
@@ -55,32 +55,22 @@ html,body{
   color:#fff;
 }
 
-/* ===== OVERLAY ===== */
-
 .overlay{
   position:fixed;
   inset:0;
   background:black;
   display:none;
-  align-items:center;
-  justify-content:center;
-  flex-direction:column;
   z-index:999;
 }
 
 .overlay.show{
-  display:flex;
+  display:block;
 }
-
-/* ===== GLITCH ===== */
 
 .glitch{
   position:fixed;
   inset:0;
-  background:linear-gradient(
-    rgba(255,0,0,.15),
-    rgba(0,255,255,.15)
-  );
+  background:linear-gradient(rgba(255,0,0,.15),rgba(0,255,255,.15));
   mix-blend-mode:screen;
   pointer-events:none;
   opacity:0;
@@ -96,18 +86,18 @@ html,body{
   to{opacity:.7}
 }
 
-/* ===== BARRA DOWNLOAD ===== */
+/* ===== DOWNLOAD ===== */
 
 .download-box{
   position:fixed;
-  bottom:80px;
+  bottom:60px;
   left:50%;
   transform:translateX(-50%);
-  width:70%;
+  width:75%;
   max-width:900px;
   display:none;
   flex-direction:column;
-  gap:15px;
+  gap:20px;
   z-index:1000;
 }
 
@@ -116,24 +106,23 @@ html,body{
 }
 
 .percent{
-  font-size:60px;
+  font-size:70px;
   font-weight:bold;
-  text-shadow:0 0 10px #fff;
+  text-shadow:0 0 15px #fff;
 }
 
 .bar{
   width:100%;
-  height:40px;
+  height:45px;
   border:4px solid #fff;
-  padding:5px;
-  box-shadow:0 0 15px #fff;
+  padding:6px;
+  box-shadow:0 0 20px #fff;
 }
 
 .bar-fill{
   width:0%;
   height:100%;
   background:#fff;
-  transition:width .1s linear;
 }
 </style>
 </head>
@@ -142,7 +131,8 @@ html,body{
 <div class="wrap">
   <div class="title"><span id="chanceNumber">3</span> CHANCES</div>
   <div class="password-line" id="boxes"></div>
-  <input id="input" type="password" maxlength="7" style="opacity:0;position:absolute;">
+  <input id="input" type="password" maxlength="7"
+    style="opacity:0;position:absolute;">
 </div>
 
 <div class="overlay" id="overlay"></div>
@@ -171,6 +161,10 @@ const percentText=document.getElementById("percentText");
 const barFill=document.getElementById("barFill");
 
 let attempts=0;
+
+/* foco automático sempre */
+window.addEventListener("load",()=>input.focus());
+document.addEventListener("click",()=>input.focus());
 
 /* criar caixas */
 for(let i=0;i<LEN;i++){
@@ -221,7 +215,7 @@ function activateChaos(){
   downloadBox.classList.add("show");
   input.disabled=true;
 
-  animateDownload(5000);
+  animateDownload(10000); // agora 10 segundos (mais lento)
 }
 
 function animateDownload(duration){
@@ -229,13 +223,13 @@ function animateDownload(duration){
 
   function step(timestamp){
     if(!start) start=timestamp;
-    const progress=timestamp-start;
-    const percent=Math.min((progress/duration)*100,100);
+    const elapsed=timestamp-start;
+    const percent=Math.min((elapsed/duration)*100,100);
 
     barFill.style.width=percent+"%";
     percentText.textContent=Math.floor(percent)+"%";
 
-    if(progress<duration){
+    if(elapsed<duration){
       requestAnimationFrame(step);
     }
   }
@@ -246,6 +240,7 @@ function animateDownload(duration){
 function resetGame(){
   attempts=0;
   chanceNumber.textContent="3";
+  input.disabled=false;
   input.value="";
   updateBoxes("");
 }
