@@ -16,6 +16,7 @@ html,body{
   cursor:text;
 }
 
+/* ===== CENTRO ===== */
 .wrap{
   height:100%;
   display:flex;
@@ -47,8 +48,8 @@ html,body{
 }
 
 .char.filled{
-  border-bottom-color:#fff;
-  color:#fff;
+  border-bottom-color:#a020f0;
+  color:#a020f0;
 }
 
 #input{
@@ -61,27 +62,69 @@ html,body{
   outline:none;
 }
 
-/* GLITCH */
-.glitch{
+/* ===== SÍMBOLO ===== */
+.symbol{
   position:fixed;
   inset:0;
-  background:linear-gradient(rgba(255,0,0,.15),rgba(0,255,255,.15));
-  mix-blend-mode:screen;
+  display:flex;
+  align-items:center;
+  justify-content:center;
   pointer-events:none;
   opacity:0;
-  z-index:10;
+  z-index:30;
 }
 
-.glitch.show{
-  animation:flash .1s infinite alternate;
+.symbol img{
+  width:250px;
+  filter:drop-shadow(0 0 30px #a020f0);
+  animation:pulse 1s infinite alternate;
 }
 
-@keyframes flash{
-  from{opacity:.1}
-  to{opacity:.7}
+.symbol.show{
+  opacity:1;
 }
 
-/* DOWNLOAD */
+@keyframes pulse{
+  from{transform:scale(.9);opacity:.6}
+  to{transform:scale(1.1);opacity:1}
+}
+
+/* ===== LUZ ROXA EXPANDINDO ===== */
+.purple-expansion{
+  position:fixed;
+  inset:0;
+  background:radial-gradient(circle at center,
+    rgba(160,32,240,.9) 0%,
+    rgba(160,32,240,.6) 20%,
+    rgba(160,32,240,.3) 40%,
+    rgba(0,0,0,1) 70%);
+  opacity:0;
+  z-index:25;
+  pointer-events:none;
+}
+
+.purple-expansion.expand{
+  animation:expandLight 6s forwards;
+}
+
+@keyframes expandLight{
+  0%{
+    opacity:0;
+    background-size:0% 0%;
+  }
+  20%{
+    opacity:1;
+  }
+  100%{
+    opacity:1;
+    background:radial-gradient(circle at center,
+      rgba(160,32,240,1) 0%,
+      rgba(160,32,240,1) 40%,
+      rgba(160,32,240,1) 80%);
+  }
+}
+
+/* ===== DOWNLOAD ===== */
 .download-box{
   position:fixed;
   bottom:60px;
@@ -92,7 +135,7 @@ html,body{
   display:none;
   flex-direction:column;
   gap:20px;
-  z-index:20;
+  z-index:40;
 }
 
 .download-box.show{
@@ -102,21 +145,22 @@ html,body{
 .percent{
   font-size:70px;
   font-weight:bold;
-  text-shadow:0 0 15px #fff;
+  color:#a020f0;
+  text-shadow:0 0 20px #a020f0;
 }
 
 .bar{
   width:100%;
   height:45px;
-  border:4px solid #fff;
+  border:4px solid #a020f0;
   padding:6px;
-  box-shadow:0 0 20px #fff;
+  box-shadow:0 0 25px #a020f0;
 }
 
 .bar-fill{
   width:0%;
   height:100%;
-  background:#fff;
+  background:#a020f0;
 }
 </style>
 </head>
@@ -129,7 +173,11 @@ html,body{
 
 <input id="input" type="password" maxlength="7">
 
-<div class="glitch" id="glitch"></div>
+<div class="purple-expansion" id="purpleExpansion"></div>
+
+<div class="symbol" id="symbol">
+  <img src="simbolo.png">
+</div>
 
 <div class="download-box" id="downloadBox">
   <div class="percent" id="percentText">0%</div>
@@ -147,7 +195,8 @@ const MAX_ATTEMPTS=3;
 
 const input=document.getElementById("input");
 const boxes=document.getElementById("boxes");
-const glitch=document.getElementById("glitch");
+const symbol=document.getElementById("symbol");
+const purpleExpansion=document.getElementById("purpleExpansion");
 const chanceNumber=document.getElementById("chanceNumber");
 const downloadBox=document.getElementById("downloadBox");
 const percentText=document.getElementById("percentText");
@@ -155,32 +204,12 @@ const barFill=document.getElementById("barFill");
 const music=document.getElementById("music");
 
 let attempts=0;
-let audioUnlocked=false;
 
-/* ===== DESKTOP: foco ao passar mouse ===== */
-document.body.addEventListener("mouseenter",()=>{
-  input.focus();
-});
+/* foco desktop */
+document.body.addEventListener("mouseenter",()=>input.focus());
+document.addEventListener("keydown",()=>input.focus());
 
-/* ===== Se qualquer tecla for pressionada, forçar foco ===== */
-document.addEventListener("keydown",(e)=>{
-  if(document.activeElement!==input){
-    input.focus();
-  }
-});
-
-/* ===== MOBILE: desbloqueia áudio ===== */
-document.addEventListener("pointerdown",()=>{
-  if(!audioUnlocked){
-    music.play().then(()=>{
-      music.pause();
-      music.currentTime=0;
-      audioUnlocked=true;
-    }).catch(()=>{});
-  }
-});
-
-/* Criar caixas */
+/* criar caixas */
 for(let i=0;i<LEN;i++){
   const d=document.createElement("div");
   d.className="char";
@@ -224,14 +253,15 @@ input.addEventListener("keydown",e=>{
 });
 
 function activateChaos(){
-  glitch.classList.add("show");
+  symbol.classList.add("show");
+  purpleExpansion.classList.add("expand");
   downloadBox.classList.add("show");
   input.disabled=true;
 
   music.currentTime=0;
   music.play().catch(()=>{});
 
-  animateDownload(12000);
+  animateDownload(15000);
 }
 
 function animateDownload(duration){
