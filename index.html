@@ -3,16 +3,61 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Loading</title>
+<title>3 chances</title>
 
 <style>
 html,body{
   height:100%;
   margin:0;
-  background:#000; /* fundo preto inicial */
+  background:#000; /* PRETO INICIAL */
   color:#fff;
   font-family:monospace;
   overflow:hidden;
+}
+
+.wrap{
+  height:100%;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  gap:25px;
+}
+
+.title{
+  font-size:32px;
+  text-shadow:2px 0 red,-2px 0 cyan;
+}
+
+.password-line{
+  display:flex;
+  gap:12px;
+}
+
+.char{
+  width:35px;
+  height:45px;
+  border-bottom:3px solid #444;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:20px;
+  color:transparent;
+}
+
+.char.filled{
+  border-bottom-color:#a020f0;
+  color:#a020f0;
+}
+
+#input{
+  position:fixed;
+  inset:0;
+  width:100%;
+  height:100%;
+  opacity:0;
+  border:none;
+  outline:none;
 }
 
 .glitch{
@@ -50,10 +95,14 @@ html,body{
   transform:translateX(-50%);
   width:75%;
   max-width:900px;
-  display:flex;
+  display:none;
   flex-direction:column;
   gap:20px;
   z-index:40;
+}
+
+.download-box.show{
+  display:flex;
 }
 
 .percent{
@@ -81,9 +130,16 @@ html,body{
 </head>
 <body>
 
-<div class="glitch show" id="glitch"></div>
+<div class="wrap" id="wrap">
+  <div class="title" id="titleText">3 CHANCES</div>
+  <div class="password-line" id="boxes"></div>
+</div>
 
-<div class="download-box">
+<input id="input" type="password" maxlength="7">
+
+<div class="glitch" id="glitch"></div>
+
+<div class="download-box" id="downloadBox">
   <div class="percent" id="percentText">0%</div>
   <div class="bar">
     <div class="bar-fill" id="barFill"></div>
@@ -93,26 +149,87 @@ html,body{
 <audio id="music" src="glitch.mp3" preload="auto"></audio>
 
 <script>
-const music=document.getElementById("music");
+const PASSWORD="hegemol";
+const LEN=7;
+const MAX_ATTEMPTS=3;
+
+const input=document.getElementById("input");
+const boxes=document.getElementById("boxes");
+const glitch=document.getElementById("glitch");
+const downloadBox=document.getElementById("downloadBox");
 const percentText=document.getElementById("percentText");
 const barFill=document.getElementById("barFill");
+const music=document.getElementById("music");
+const titleText=document.getElementById("titleText");
 
-/* Desbloqueio de autoplay */
-document.addEventListener("click", startExperience, { once:true });
+let attempts=0;
 
-function startExperience(){
-  music.currentTime=0;
-
+document.addEventListener("click",()=>{
   music.play().then(()=>{
-    syncWithAudio();
-  }).catch(err=>{
-    console.error("Erro ao tocar áudio:",err);
+    music.pause();
+    music.currentTime=0;
+  }).catch(()=>{});
+},{once:true});
+
+for(let i=0;i<LEN;i++){
+  const d=document.createElement("div");
+  d.className="char";
+  boxes.appendChild(d);
+}
+
+function updateBoxes(v){
+  [...boxes.children].forEach((b,i)=>{
+    b.classList.toggle("filled",i<v.length);
+    b.textContent=i<v.length?"•":"";
   });
 }
 
-function syncWithAudio(){
-  const duration=music.duration * 1000;
+input.addEventListener("input",e=>{
+  const val=e.target.value.slice(0,LEN);
+  e.target.value=val;
+  updateBoxes(val);
+});
 
+input.addEventListener("keydown",e=>{
+  if(e.key==="Enter"){
+    const v=input.value;
+    if(v.length!==LEN) return;
+
+    if(v.toLowerCase()===PASSWORD){
+      alert("ACESSO LIBERADO");
+      return;
+    }
+
+    attempts++;
+    input.value="";
+    updateBoxes("");
+
+    const remaining=MAX_ATTEMPTS-attempts;
+
+    if(remaining>0){
+      titleText.textContent = remaining===1 ? "1 CHANCE" : remaining+" CHANCES";
+    }
+
+    if(attempts>=MAX_ATTEMPTS){
+      activateChaos();
+    }
+  }
+});
+
+function activateChaos(){
+  document.body.style.background="#2b0033"; /* ROXO APENAS AQUI */
+
+  glitch.classList.add("show");
+  downloadBox.classList.add("show");
+
+  music.currentTime=0;
+  music.play().then(()=>{
+    syncWithAudio();
+  }).catch(()=>{});
+}
+
+function syncWithAudio(){
+  const duration=music.duration*1000;
   let start=null;
 
   function step(timestamp){
