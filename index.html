@@ -8,7 +8,7 @@
 <style>
 :root{
   --bg:#000;
-  --accent:#ff0000;
+  --accent:#fff;
 }
 
 html,body{
@@ -30,13 +30,8 @@ html,body{
 }
 
 .title{
-  font-size:30px;
+  font-size:32px;
   text-shadow:2px 0 red,-2px 0 cyan;
-}
-
-.attempts{
-  font-size:18px;
-  color:red;
 }
 
 .password-line{
@@ -56,9 +51,11 @@ html,body{
 }
 
 .char.filled{
-  border-bottom-color:var(--accent);
-  color:red;
+  border-bottom-color:#fff;
+  color:#fff;
 }
+
+/* ===== OVERLAY ===== */
 
 .overlay{
   position:fixed;
@@ -68,7 +65,6 @@ html,body{
   align-items:center;
   justify-content:center;
   flex-direction:column;
-  font-size:25px;
   z-index:999;
 }
 
@@ -76,77 +72,105 @@ html,body{
   display:flex;
 }
 
-.progress{
-  position:fixed;
-  bottom:0;
-  left:0;
-  height:6px;
-  width:0%;
-  background:red;
-  z-index:1000;
-}
+/* ===== GLITCH ===== */
 
 .glitch{
   position:fixed;
   inset:0;
-  background:linear-gradient(rgba(255,0,0,.2),rgba(0,255,255,.2));
+  background:linear-gradient(
+    rgba(255,0,0,.15),
+    rgba(0,255,255,.15)
+  );
   mix-blend-mode:screen;
   pointer-events:none;
   opacity:0;
+  z-index:998;
 }
 
 .glitch.show{
-  animation:flash .2s infinite alternate;
+  animation:flash .1s infinite alternate;
 }
 
 @keyframes flash{
   from{opacity:.1}
-  to{opacity:.8}
+  to{opacity:.7}
+}
+
+/* ===== BARRA DOWNLOAD ===== */
+
+.download-box{
+  position:fixed;
+  bottom:80px;
+  left:50%;
+  transform:translateX(-50%);
+  width:70%;
+  max-width:900px;
+  display:none;
+  flex-direction:column;
+  gap:15px;
+  z-index:1000;
+}
+
+.download-box.show{
+  display:flex;
+}
+
+.percent{
+  font-size:60px;
+  font-weight:bold;
+  text-shadow:0 0 10px #fff;
+}
+
+.bar{
+  width:100%;
+  height:40px;
+  border:4px solid #fff;
+  padding:5px;
+  box-shadow:0 0 15px #fff;
+}
+
+.bar-fill{
+  width:0%;
+  height:100%;
+  background:#fff;
+  transition:width .1s linear;
 }
 </style>
 </head>
 <body>
 
 <div class="wrap">
-  <div class="title">3 CHANCES</div>
-  <div class="attempts" id="attemptsText">Tentativas restantes: 3</div>
+  <div class="title"><span id="chanceNumber">3</span> CHANCES</div>
   <div class="password-line" id="boxes"></div>
   <input id="input" type="password" maxlength="7" style="opacity:0;position:absolute;">
 </div>
 
-<div class="overlay" id="overlay">ACESSO BLOQUEADO</div>
+<div class="overlay" id="overlay"></div>
 <div class="glitch" id="glitch"></div>
-<div class="progress" id="progress"></div>
 
-<audio id="music" src="glitch.mp3" preload="auto"></audio>
+<div class="download-box" id="downloadBox">
+  <div class="percent" id="percentText">0%</div>
+  <div class="bar">
+    <div class="bar-fill" id="barFill"></div>
+  </div>
+</div>
 
 <script>
-const PASSWORD="hegemol"; // comparação será case-insensitive
+const PASSWORD="hegemol";
 const LEN=7;
 const MAX_ATTEMPTS=3;
 
 const input=document.getElementById("input");
 const boxes=document.getElementById("boxes");
-const overlay=document.getElementById("overlay");
 const glitch=document.getElementById("glitch");
-const music=document.getElementById("music");
-const progress=document.getElementById("progress");
-const attemptsText=document.getElementById("attemptsText");
+const overlay=document.getElementById("overlay");
+const chanceNumber=document.getElementById("chanceNumber");
+
+const downloadBox=document.getElementById("downloadBox");
+const percentText=document.getElementById("percentText");
+const barFill=document.getElementById("barFill");
 
 let attempts=0;
-let audioUnlocked=false;
-
-/* desbloquear áudio no primeiro clique */
-document.addEventListener("click",()=>{
-  if(!audioUnlocked){
-    music.play().then(()=>{
-      music.pause();
-      music.currentTime=0;
-      audioUnlocked=true;
-    }).catch(()=>{});
-  }
-  input.focus();
-},{once:true});
 
 /* criar caixas */
 for(let i=0;i<LEN;i++){
@@ -162,11 +186,6 @@ function updateBoxes(v){
   });
 }
 
-function updateAttempts(){
-  const remaining = MAX_ATTEMPTS - attempts;
-  attemptsText.textContent = `Tentativas restantes: ${remaining}`;
-}
-
 input.addEventListener("input",e=>{
   const val=e.target.value.slice(0,LEN);
   e.target.value=val;
@@ -180,15 +199,13 @@ input.addEventListener("keydown",e=>{
 
     if(v.toLowerCase()===PASSWORD){
       alert("ACESSO LIBERADO");
-      attempts=0;
-      updateAttempts();
-      input.value="";
-      updateBoxes("");
+      resetGame();
       return;
     }
 
     attempts++;
-    updateAttempts();
+    chanceNumber.textContent=MAX_ATTEMPTS-attempts;
+
     input.value="";
     updateBoxes("");
 
@@ -201,26 +218,24 @@ input.addEventListener("keydown",e=>{
 function activateChaos(){
   overlay.classList.add("show");
   glitch.classList.add("show");
-
-  music.currentTime=0;
-  music.play().catch(()=>{});
-
-  progress.style.display="block"; // garante que aparece
-  animateProgress(5000);
+  downloadBox.classList.add("show");
   input.disabled=true;
+
+  animateDownload(5000);
 }
 
-function animateProgress(duration){
-  progress.style.width="0%";
+function animateDownload(duration){
   let start=null;
 
   function step(timestamp){
     if(!start) start=timestamp;
-    const progressTime=timestamp-start;
-    const percent=Math.min((progressTime/duration)*100,100);
-    progress.style.width=percent+"%";
+    const progress=timestamp-start;
+    const percent=Math.min((progress/duration)*100,100);
 
-    if(progressTime<duration){
+    barFill.style.width=percent+"%";
+    percentText.textContent=Math.floor(percent)+"%";
+
+    if(progress<duration){
       requestAnimationFrame(step);
     }
   }
@@ -228,7 +243,12 @@ function animateProgress(duration){
   requestAnimationFrame(step);
 }
 
-updateAttempts();
+function resetGame(){
+  attempts=0;
+  chanceNumber.textContent="3";
+  input.value="";
+  updateBoxes("");
+}
 </script>
 
 </body>
