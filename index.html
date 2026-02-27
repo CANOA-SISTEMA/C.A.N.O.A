@@ -34,6 +34,11 @@ html,body{
   text-shadow:2px 0 red,-2px 0 cyan;
 }
 
+.attempts{
+  font-size:18px;
+  color:red;
+}
+
 .password-line{
   display:flex;
   gap:12px;
@@ -104,6 +109,7 @@ html,body{
 
 <div class="wrap">
   <div class="title">3 CHANCES</div>
+  <div class="attempts" id="attemptsText">Tentativas restantes: 3</div>
   <div class="password-line" id="boxes"></div>
   <input id="input" type="password" maxlength="7" style="opacity:0;position:absolute;">
 </div>
@@ -115,7 +121,7 @@ html,body{
 <audio id="music" src="glitch.mp3" preload="auto"></audio>
 
 <script>
-const PASS_HASH="f97ac9e04309ce602c5026a251aa2b4523523175ce13b3598399db03b263b4ac";
+const PASSWORD="hegemol"; // comparação será case-insensitive
 const LEN=7;
 const MAX_ATTEMPTS=3;
 
@@ -125,6 +131,7 @@ const overlay=document.getElementById("overlay");
 const glitch=document.getElementById("glitch");
 const music=document.getElementById("music");
 const progress=document.getElementById("progress");
+const attemptsText=document.getElementById("attemptsText");
 
 let attempts=0;
 let audioUnlocked=false;
@@ -155,12 +162,9 @@ function updateBoxes(v){
   });
 }
 
-async function sha256(text){
-  const enc=new TextEncoder().encode(text);
-  const buf=await crypto.subtle.digest("SHA-256",enc);
-  return [...new Uint8Array(buf)]
-    .map(b=>b.toString(16).padStart(2,"0"))
-    .join("");
+function updateAttempts(){
+  const remaining = MAX_ATTEMPTS - attempts;
+  attemptsText.textContent = `Tentativas restantes: ${remaining}`;
 }
 
 input.addEventListener("input",e=>{
@@ -169,22 +173,22 @@ input.addEventListener("input",e=>{
   updateBoxes(val);
 });
 
-input.addEventListener("keydown",async e=>{
+input.addEventListener("keydown",e=>{
   if(e.key==="Enter"){
     const v=input.value;
     if(v.length!==LEN) return;
 
-    const h=await sha256(v);
-
-    if(h===PASS_HASH){
+    if(v.toLowerCase()===PASSWORD){
       alert("ACESSO LIBERADO");
       attempts=0;
+      updateAttempts();
       input.value="";
       updateBoxes("");
       return;
     }
 
     attempts++;
+    updateAttempts();
     input.value="";
     updateBoxes("");
 
@@ -201,6 +205,7 @@ function activateChaos(){
   music.currentTime=0;
   music.play().catch(()=>{});
 
+  progress.style.display="block"; // garante que aparece
   animateProgress(5000);
   input.disabled=true;
 }
@@ -222,6 +227,8 @@ function animateProgress(duration){
 
   requestAnimationFrame(step);
 }
+
+updateAttempts();
 </script>
 
 </body>
