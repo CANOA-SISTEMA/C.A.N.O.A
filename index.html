@@ -51,7 +51,6 @@ html,body{
   color:#fff;
 }
 
-/* INPUT invisível mas funcional */
 #input{
   position:fixed;
   inset:0;
@@ -62,7 +61,7 @@ html,body{
   outline:none;
 }
 
-/* Glitch */
+/* GLITCH */
 .glitch{
   position:fixed;
   inset:0;
@@ -82,7 +81,7 @@ html,body{
   to{opacity:.7}
 }
 
-/* Download */
+/* DOWNLOAD */
 .download-box{
   position:fixed;
   bottom:60px;
@@ -158,7 +157,19 @@ const music=document.getElementById("music");
 let attempts=0;
 let audioUnlocked=false;
 
-/* Desbloqueia áudio no primeiro toque real */
+/* ===== DESKTOP: foco ao passar mouse ===== */
+document.body.addEventListener("mouseenter",()=>{
+  input.focus();
+});
+
+/* ===== Se qualquer tecla for pressionada, forçar foco ===== */
+document.addEventListener("keydown",(e)=>{
+  if(document.activeElement!==input){
+    input.focus();
+  }
+});
+
+/* ===== MOBILE: desbloqueia áudio ===== */
 document.addEventListener("pointerdown",()=>{
   if(!audioUnlocked){
     music.play().then(()=>{
@@ -168,10 +179,6 @@ document.addEventListener("pointerdown",()=>{
     }).catch(()=>{});
   }
 });
-
-/* Mantém foco sempre */
-window.addEventListener("load",()=>input.focus());
-document.addEventListener("click",()=>input.focus());
 
 /* Criar caixas */
 for(let i=0;i<LEN;i++){
@@ -224,7 +231,7 @@ function activateChaos(){
   music.currentTime=0;
   music.play().catch(()=>{});
 
-  animateDownload(12000); // mais lento
+  animateDownload(12000);
 }
 
 function animateDownload(duration){
