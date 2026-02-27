@@ -1,187 +1,3 @@
-<!doctype html>
-<html lang="pt-BR">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Sistema</title>
-
-<style>
-html,body{
-  margin:0;
-  height:100%;
-  background:#000;
-  color:#fff;
-  font-family:monospace;
-  overflow:hidden;
-}
-
-/* ===== LOGIN ===== */
-#loginScreen{
-  height:100%;
-  display:flex;
-  flex-direction:column;
-  justify-content:center;
-  align-items:center;
-  gap:25px;
-}
-
-.title{
-  font-size:30px;
-}
-
-.password-line{
-  display:flex;
-  gap:10px;
-}
-
-.char{
-  width:35px;
-  height:45px;
-  border-bottom:3px solid #444;
-  text-align:center;
-  font-size:20px;
-}
-
-.char.filled{
-  border-color:#a020f0;
-  color:#a020f0;
-}
-
-#input{
-  position:fixed;
-  inset:0;
-  opacity:0;
-  border:none;
-  outline:none;
-}
-
-/* ===== SIMBOLO ===== */
-#symbol{
-  position:fixed;
-  inset:0;
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  opacity:0;
-  z-index:10;
-}
-
-#symbol img{
-  width:250px;
-}
-
-/* ===== LUZ ROXA ===== */
-#purple{
-  position:fixed;
-  inset:0;
-  background:radial-gradient(circle at center,
-    rgba(160,32,240,1) 0%,
-    rgba(160,32,240,0.8) 30%,
-    rgba(0,0,0,1) 70%);
-  opacity:0;
-  z-index:5;
-}
-
-#purple.expand{
-  animation:expand 5s forwards;
-}
-
-@keyframes expand{
-  0%{opacity:0;}
-  20%{opacity:1;}
-  100%{
-    opacity:1;
-    background:#a020f0;
-  }
-}
-
-/* ===== DOWNLOAD ===== */
-#download{
-  position:fixed;
-  bottom:50px;
-  left:50%;
-  transform:translateX(-50%);
-  width:70%;
-  display:none;
-  flex-direction:column;
-  gap:15px;
-  z-index:20;
-}
-
-#percent{
-  font-size:50px;
-  color:#a020f0;
-}
-
-.bar{
-  width:100%;
-  height:40px;
-  border:3px solid #a020f0;
-}
-
-.fill{
-  height:100%;
-  width:0%;
-  background:#a020f0;
-}
-
-/* ===== SISTEMA ===== */
-#system{
-  display:none;
-  height:100%;
-  background:#111;
-  overflow:auto;
-  padding:20px;
-}
-
-.folder{
-  border:2px solid #a020f0;
-  padding:10px;
-  margin-bottom:20px;
-}
-
-textarea{
-  width:100%;
-  height:120px;
-  background:#000;
-  color:#a020f0;
-  border:1px solid #a020f0;
-  margin-top:10px;
-}
-
-img.noteImage{
-  max-width:200px;
-  display:block;
-  margin-top:10px;
-}
-</style>
-</head>
-<body>
-
-<div id="loginScreen">
-  <div class="title"><span id="chanceNumber">3</span> CHANCES</div>
-  <div class="password-line" id="boxes"></div>
-</div>
-
-<input id="input" type="password" maxlength="7">
-
-<div id="symbol">
-  <img src="simbolo.png">
-</div>
-
-<div id="purple"></div>
-
-<div id="download">
-  <div id="percent">0%</div>
-  <div class="bar"><div class="fill" id="fill"></div></div>
-</div>
-
-<div id="system">
-  <h2>SISTEMA DE BLOCOS</h2>
-  <button onclick="createFolder()">Criar Pasta</button>
-  <div id="folders"></div>
-</div>
-
 <script>
 const PASSWORD="hegemol";
 const LEN=7;
@@ -199,9 +15,17 @@ const system=document.getElementById("system");
 
 let attempts=0;
 
-document.body.addEventListener("mouseenter",()=>input.focus());
-document.addEventListener("keydown",()=>input.focus());
+/* ===== FOCO ===== */
+function focusInput(){
+  if(system.style.display!=="block"){
+    input.focus();
+  }
+}
 
+document.body.addEventListener("mouseenter",focusInput);
+document.addEventListener("keydown",focusInput);
+
+/* ===== CRIAR CAIXAS ===== */
 for(let i=0;i<LEN;i++){
   const d=document.createElement("div");
   d.className="char";
@@ -221,6 +45,7 @@ input.addEventListener("input",e=>{
   update(v);
 });
 
+/* ===== ENTER ===== */
 input.addEventListener("keydown",e=>{
   if(e.key==="Enter"){
     if(input.value.toLowerCase()===PASSWORD){
@@ -235,6 +60,7 @@ input.addEventListener("keydown",e=>{
   }
 });
 
+/* ===== CAOS ===== */
 function chaos(){
   symbol.style.opacity=1;
   purple.classList.add("expand");
@@ -257,21 +83,32 @@ function chaos(){
   },100);
 }
 
+/* ===== ABRIR SISTEMA ===== */
 function openSystem(){
-  loginScreen.style.display="none";
-  system.style.display="block";
+
+  // Remove tela de login completamente
+  loginScreen.remove();
+  input.remove();
+
+  // Desbloqueia scroll
   document.body.style.overflow="auto";
+
+  // Mostra sistema
+  system.style.display="block";
 }
 
+/* ===== SISTEMA ===== */
 function createFolder(){
   const name=prompt("Nome da pasta:");
   if(!name) return;
 
   const folder=document.createElement("div");
   folder.className="folder";
-  folder.innerHTML=`<h3>${name}</h3>
+  folder.innerHTML=`
+    <h3>${name}</h3>
     <button onclick="addNote(this)">Novo Bloco</button>
-    <div class="notes"></div>`;
+    <div class="notes"></div>
+  `;
   document.getElementById("folders").appendChild(folder);
 }
 
@@ -299,6 +136,3 @@ function addNote(btn){
   container.appendChild(area);
 }
 </script>
-
-</body>
-</html>
