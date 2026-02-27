@@ -6,362 +6,363 @@
 <title>3 chances</title>
 
 <style>
-html,body{
-  height:100%;
-  margin:0;
-  background:#000; /* fundo escuro inicial */
-  color:#fff;
-  font-family:monospace;
-  overflow:hidden;
-  transition:background .35s ease;
-}
+  html,body{
+    height:100%;
+    margin:0;
+    background:#000; /* fundo inicial escuro */
+    color:#fff;
+    font-family:monospace;
+    overflow:hidden;
+    transition:background .35s ease;
+  }
 
-.wrap{
-  height:100%;
-  display:flex;
-  flex-direction:column;
-  justify-content:center;
-  align-items:center;
-  gap:25px;
-  transition:opacity .3s;
-}
+  .wrap{
+    height:100%;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    align-items:center;
+    gap:25px;
+    transition:opacity .25s, visibility .25s;
+  }
 
-.wrap.hidden{
-  opacity:0;
-  pointer-events:none;
-  visibility:hidden;
-}
+  .wrap.hidden{
+    opacity:0;
+    visibility:hidden;
+    pointer-events:none;
+  }
 
-.title{
-  font-size:32px;
-  text-shadow:2px 0 red,-2px 0 cyan;
-  text-transform:none;
-}
+  .title{
+    font-size:32px;
+    text-shadow:2px 0 red,-2px 0 cyan;
+  }
 
-/* linha de password */
-.password-line{
-  display:flex;
-  gap:12px;
-}
+  .password-line{
+    display:flex;
+    gap:12px;
+  }
 
-.char{
-  width:35px;
-  height:45px;
-  border-bottom:3px solid #444;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-size:20px;
-  color:transparent;
-  transition: border-color .2s, color .2s;
-}
+  .char{
+    width:35px;
+    height:45px;
+    border-bottom:3px solid #444;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:20px;
+    color:transparent;
+    transition:border-color .2s, color .2s;
+  }
 
-.char.filled{
-  border-bottom-color:#ddd;
-  color:#ddd;
-}
+  .char.filled{
+    border-bottom-color:#ddd;
+    color:#ddd;
+  }
 
-/* estilos aplicados SÓ quando a página estiver em "chaos" (após a última tentativa) */
-body.chaos{
-  background:#2b0033; /* roxo apenas quando chaos ativo */
-}
+  /* caos só quando ativado */
+  body.chaos{
+    background:#2b0033;
+  }
 
-body.chaos .char.filled{
-  border-bottom-color:#a020f0;
-  color:#a020f0;
-}
+  body.chaos .char.filled{
+    border-bottom-color:#a020f0;
+    color:#a020f0;
+  }
 
-/* glitch overlay */
-.glitch{
-  position:fixed;
-  inset:0;
-  background:
-    repeating-linear-gradient(
-      0deg,
-      rgba(255,0,0,.2) 0px,
-      rgba(0,255,255,.2) 2px,
-      transparent 4px
-    );
-  mix-blend-mode:screen;
-  pointer-events:none;
-  opacity:0;
-  z-index:20;
-  transition:opacity .15s;
-}
+  /* glitch overlay */
+  .glitch{
+    position:fixed;
+    inset:0;
+    background:
+      repeating-linear-gradient(
+        0deg,
+        rgba(255,0,0,.2) 0px,
+        rgba(0,255,255,.2) 2px,
+        transparent 4px
+      );
+    mix-blend-mode:screen;
+    pointer-events:none;
+    opacity:0;
+    z-index:20;
+    transition:opacity .15s;
+  }
 
-.glitch.show{
-  animation:glitchHeavy .08s infinite;
-  opacity:1;
-}
+  .glitch.show{
+    animation:glitchHeavy .08s infinite;
+    opacity:1;
+  }
 
-@keyframes glitchHeavy{
-  0%{transform:translate(0,0);opacity:.2}
-  25%{transform:translate(-5px,3px);opacity:.6}
-  50%{transform:translate(5px,-3px);opacity:.8}
-  75%{transform:translate(-3px,2px);opacity:.5}
-  100%{transform:translate(0,0);opacity:.7}
-}
+  @keyframes glitchHeavy{
+    0%{transform:translate(0,0);opacity:.2}
+    25%{transform:translate(-5px,3px);opacity:.6}
+    50%{transform:translate(5px,-3px);opacity:.8}
+    75%{transform:translate(-3px,2px);opacity:.5}
+    100%{transform:translate(0,0);opacity:.7}
+  }
 
-/* SHAKE (aplicado junto com chaos) */
-.shake{
-  animation:shakeScreen .1s infinite;
-}
+  /* shake */
+  .shake{
+    animation:shakeScreen .1s infinite;
+  }
 
-@keyframes shakeScreen{
-  0%{transform:translate(0,0);}
-  25%{transform:translate(-8px,5px);}
-  50%{transform:translate(8px,-5px);}
-  75%{transform:translate(-5px,3px);}
-  100%{transform:translate(0,0);}
-}
+  @keyframes shakeScreen{
+    0%{transform:translate(0,0);}
+    25%{transform:translate(-8px,5px);}
+    50%{transform:translate(8px,-5px);}
+    75%{transform:translate(-5px,3px);}
+    100%{transform:translate(0,0);}
+  }
 
-/* download box (aparece só no caos) */
-.download-box{
-  position:fixed;
-  bottom:80px;
-  left:50%;
-  transform:translateX(-50%);
-  width:75%;
-  max-width:900px;
-  display:none;
-  flex-direction:column;
-  gap:20px;
-  z-index:40;
-  pointer-events:none;
-}
+  /* download box */
+  .download-box{
+    position:fixed;
+    bottom:80px;
+    left:50%;
+    transform:translateX(-50%);
+    width:75%;
+    max-width:900px;
+    display:flex;
+    flex-direction:column;
+    gap:20px;
+    z-index:40;
+    pointer-events:none;
+    opacity:0;
+    visibility:hidden;
+    transition:opacity .25s, visibility .25s;
+  }
 
-.download-box.show{
-  display:flex;
-}
+  .download-box.show{
+    opacity:1;
+    visibility:visible;
+  }
 
-.percent{
-  font-size:70px;
-  font-weight:bold;
-  color:#a020f0;
-  text-shadow:0 0 20px #a020f0;
-  text-align:center;
-}
+  .percent{
+    font-size:70px;
+    font-weight:bold;
+    color:#a020f0;
+    text-shadow:0 0 20px #a020f0;
+    text-align:center;
+  }
 
-.bar{
-  width:100%;
-  height:45px;
-  border:4px solid #a020f0;
-  padding:6px;
-  box-shadow:0 0 25px #a020f0;
-}
+  .bar{
+    width:100%;
+    height:45px;
+    border:4px solid #a020f0;
+    padding:6px;
+    box-shadow:0 0 25px #a020f0;
+  }
 
-.bar-fill{
-  width:0%;
-  height:100%;
-  background:#a020f0;
-}
+  .bar-fill{
+    width:0%;
+    height:100%;
+    background:#a020f0;
+    transition:width .15s linear;
+  }
 
-/* símbolo que aparece ao acabar */
-.symbol{
-  display:none;
-  width:140px;
-  height:auto;
-  margin-top:18px;
-  z-index:50;
-  transition:opacity .25s, transform .25s;
-}
+  /* símbolo central (sempre no topo) */
+  .symbol{
+    position:fixed;
+    top:50%;
+    left:50%;
+    transform:translate(-50%,-50%) scale(.6);
+    width:180px;
+    max-width:40vw;
+    z-index:9999; /* na frente de tudo */
+    opacity:0;
+    visibility:hidden;
+    transition:all .35s ease;
+    pointer-events:none;
+  }
 
-.symbol.show{
-  display:block;
-  opacity:1;
-  transform:scale(1);
-  animation:symbolPop .35s ease;
-}
+  .symbol.show{
+    opacity:1;
+    visibility:visible;
+    transform:translate(-50%,-50%) scale(1);
+  }
 
-@keyframes symbolPop{
-  0%{transform:scale(.6); opacity:0}
-  60%{transform:scale(1.08); opacity:1}
-  100%{transform:scale(1); opacity:1}
-}
-
-/* pequenas transições para algum fade-out */
-.fade-out{
-  transition:opacity .35s;
-  opacity:0;
-}
+  /* fade-out utilitário */
+  .fade-out{
+    opacity:0 !important;
+    visibility:hidden !important;
+  }
 </style>
 </head>
 <body>
 
-<div class="wrap" id="mainWrap">
-  <div class="title" id="titleText">3 chances</div>
-  <div class="password-line" id="boxes"></div>
-</div>
-
-<input id="input" type="password" maxlength="7" autocomplete="off" autocapitalize="off">
-
-<div class="glitch" id="glitch"></div>
-
-<div class="download-box" id="downloadBox">
-  <div class="percent" id="percentText">0%</div>
-  <div class="bar">
-    <div class="bar-fill" id="barFill"></div>
+  <div class="wrap" id="mainWrap">
+    <div class="title" id="titleText">3 chances</div>
+    <div class="password-line" id="boxes"></div>
   </div>
-</div>
 
-<!-- Simbolo que deve aparecer após acabar as chances -->
-<img id="symbol" class="symbol" src="simbolo.png" alt="símbolo">
+  <input id="input" type="password" maxlength="7" autocomplete="off" autocapitalize="off" style="position:fixed;left:-9999px;">
 
-<audio id="music" src="glitch.mp3" preload="auto"></audio>
+  <div class="glitch" id="glitch"></div>
+
+  <div class="download-box" id="downloadBox">
+    <div class="percent" id="percentText">0%</div>
+    <div class="bar">
+      <div class="bar-fill" id="barFill"></div>
+    </div>
+  </div>
+
+  <!-- símbolo: coloque aqui o arquivo simbolo.png na mesma pasta -->
+  <img id="symbol" class="symbol" src="./simbolo.png" alt="símbolo final">
+
+  <audio id="music" src="glitch.mp3" preload="auto"></audio>
 
 <script>
-const PASSWORD="hegemol";
-const LEN=7;
-const MAX_ATTEMPTS=3;
+  const PASSWORD = "hegemol";
+  const LEN = 7;
+  const MAX_ATTEMPTS = 3;
 
-const input=document.getElementById("input");
-const boxes=document.getElementById("boxes");
-const glitch=document.getElementById("glitch");
-const downloadBox=document.getElementById("downloadBox");
-const percentText=document.getElementById("percentText");
-const barFill=document.getElementById("barFill");
-const music=document.getElementById("music");
-const titleText=document.getElementById("titleText");
-const symbol=document.getElementById("symbol");
-const mainWrap=document.getElementById("mainWrap");
+  const input = document.getElementById("input");
+  const boxes = document.getElementById("boxes");
+  const glitch = document.getElementById("glitch");
+  const downloadBox = document.getElementById("downloadBox");
+  const percentText = document.getElementById("percentText");
+  const barFill = document.getElementById("barFill");
+  const music = document.getElementById("music");
+  const titleText = document.getElementById("titleText");
+  const symbol = document.getElementById("symbol");
+  const mainWrap = document.getElementById("mainWrap");
 
-let attempts=0;
+  let attempts = 0;
 
-/* Título inicial */
-titleText.textContent = `${MAX_ATTEMPTS} chances`;
+  // título inicial
+  titleText.textContent = `${MAX_ATTEMPTS} chances`;
 
-/* tocar e pausar para liberar autoplay em alguns navegadores */
-document.addEventListener("click",()=>{
-  music.play().then(()=>{
-    music.pause();
-    music.currentTime=0;
-  }).catch(()=>{});
-},{once:true});
+  // Criar boxes
+  for (let i = 0; i < LEN; i++) {
+    const d = document.createElement("div");
+    d.className = "char";
+    boxes.appendChild(d);
+  }
 
-/* criar os boxes */
-for(let i=0;i<LEN;i++){
-  const d=document.createElement("div");
-  d.className="char";
-  boxes.appendChild(d);
-}
+  function updateBoxes(v) {
+    const length = v ? v.length : 0;
+    [...boxes.children].forEach((b, i) => {
+      b.classList.toggle("filled", i < length);
+      b.textContent = i < length ? "•" : "";
+    });
+  }
 
-function updateBoxes(v){
-  const length = v ? v.length : 0;
-  [...boxes.children].forEach((b,i)=>{
-    b.classList.toggle("filled", i < length);
-    b.textContent = i < length ? "•" : "";
+  // usamos um input "invisível" posicionado fora da tela para capturar digitação
+  // ao clicar na página, focamos o input para facilitar testes
+  document.addEventListener('click', () => {
+    try { input.focus(); } catch (e) {}
   });
-}
 
-input.addEventListener("input",e=>{
-  const val=e.target.value.slice(0,LEN);
-  e.target.value=val;
-  updateBoxes(val);
-});
+  // liberar autoplay em alguns navegadores (toca+pause)
+  document.addEventListener("click", () => {
+    music.play().then(()=>{ music.pause(); music.currentTime = 0; }).catch(()=>{});
+  }, { once: true });
 
-/* função para atualizar texto das chances */
-function updateTitleRemaining(remaining){
-  if(remaining > 1){
-    titleText.textContent = `${remaining} chances`;
-  } else if(remaining === 1){
-    titleText.textContent = `1 chance`;
-  } else {
-    titleText.textContent = `0 chances`;
+  // atualizar boxes conforme input (o usuário pode colar ou digitar)
+  input.addEventListener("input", e => {
+    const val = e.target.value.slice(0, LEN);
+    e.target.value = val;
+    updateBoxes(val);
+  });
+
+  // inicializamos o valor do input como vazio e focado
+  input.value = "";
+  setTimeout(()=>{ try{ input.focus(); }catch(e){} }, 50);
+
+  function updateTitleRemaining(remaining) {
+    if (remaining > 1) titleText.textContent = `${remaining} chances`;
+    else if (remaining === 1) titleText.textContent = `1 chance`;
+    else titleText.textContent = `0 chances`;
   }
-}
 
-/* evento Enter para checar senha */
-input.addEventListener("keydown",e=>{
-  if(e.key==="Enter"){
-    const v=input.value;
-    if(v.length!==LEN) return;
+  // detectar Enter para checar senha
+  input.addEventListener("keydown", e => {
+    if (e.key === "Enter") {
+      const v = input.value;
+      if (v.length !== LEN) return;
 
-    if(v.toLowerCase()===PASSWORD){
-      alert("ACESSO LIBERADO");
-      return;
-    }
+      if (v.toLowerCase() === PASSWORD) {
+        alert("ACESSO LIBERADO");
+        return;
+      }
 
-    attempts++;
-    input.value="";
-    updateBoxes("");
+      attempts++;
+      input.value = "";
+      updateBoxes("");
 
-    const remaining=MAX_ATTEMPTS-attempts;
-
-    if(remaining >= 0){
+      const remaining = MAX_ATTEMPTS - attempts;
       updateTitleRemaining(remaining);
+
+      if (attempts === MAX_ATTEMPTS) {
+        // garantir que o texto mostre 0 chances antes de ativar caos
+        updateTitleRemaining(0);
+        activateChaos();
+      }
     }
+  });
 
-    if(attempts===MAX_ATTEMPTS){
-      activateChaos();
-    }
-  }
-});
+  // listener de erro para diagnóstico do simbolo
+  symbol.addEventListener('error', () => {
+    console.warn('simbolo.png não foi encontrado. Verifique o caminho/nome do arquivo.');
+    symbol.alt = '[símbolo não encontrado]';
+    // se quiser, podemos criar um fallback visual aqui (texto, svg, etc)
+  });
 
-/* Listener de erro para ajudar a identificar se o simbolo não carregar */
-symbol.addEventListener('error', ()=>{
-  console.warn('simbolo.png não foi encontrado no caminho indicado. Verifique o nome e o diretório.');
-  symbol.alt = '[simbolo não encontrado]';
-  // opcional: você pode simplesmente mostrar um texto ou algum fallback
-});
-
-/* Ativa toda a sequência final (roxo, shake, glitch, mostra símbolo) */
-function activateChaos(){
-  document.body.classList.add("chaos");
-  document.body.classList.add("shake");
-
-  glitch.classList.add("show");
-  downloadBox.classList.add("show");
-
-  input.disabled = true;
-
-  // mostra o símbolo
-  symbol.classList.add("show");
-
-  // atualiza texto final
-  titleText.textContent = "acabou";
-
-  // toca o áudio e sincroniza a barra
-  music.currentTime=0;
-  music.play().then(syncWithAudio).catch(()=>{});
-
-  // após X ms, fazer a "parte" sumir (downloadBox e glitch), mantendo o symbol visível
-  const HIDE_AFTER = 3800; // milissegundos, ajuste se quiser
-  setTimeout(()=>{
-    // sumir a downloadBox e glitch com transição
-    downloadBox.classList.remove("show");
-    glitch.classList.remove("show");
-
-    // remover shake e chaos se preferir (aqui removo só o shake, mantendo o fundo roxo)
-    document.body.classList.remove("shake");
-
-    // opcional: esconder a interface principal (wrap) também
+  function activateChaos() {
+    // esconder imediatamente a interface de senha (título + underlines)
     mainWrap.classList.add('hidden');
 
-    // manter o símbolo visível no centro — você pode ajustar posição via CSS se necessário
-  }, HIDE_AFTER);
-}
+    // esconder o input (por segurança)
+    input.disabled = true;
+    input.style.display = 'none';
 
-/* Sincroniza barra com duração do áudio (fallback caso duration não esteja disponível) */
-function syncWithAudio(){
-  const duration = (music.duration && !isNaN(music.duration)) ? music.duration*1000 : 4500;
-  let start=null;
+    // ativar caos visual
+    document.body.classList.add('chaos', 'shake');
 
-  function step(timestamp){
-    if(!start) start=timestamp;
-    const elapsed=timestamp-start;
-    const percent=Math.min((elapsed/duration)*100,100);
+    // mostrar glitch e download box (barra)
+    glitch.classList.add('show');
+    downloadBox.classList.add('show');
 
-    barFill.style.width=percent+"%";
-    percentText.textContent=Math.floor(percent)+"%";
+    // mostrar o símbolo central (na frente de tudo)
+    // colocamos pequeno delay linear para garantir que o CSS tenha tempo de aplicar classes
+    setTimeout(()=> symbol.classList.add('show'), 80);
 
-    if(elapsed<duration){
-      requestAnimationFrame(step);
-    }
+    // tocar som e sincronizar barra
+    music.currentTime = 0;
+    music.play().then(syncWithAudio).catch(()=>{ /* silent fail */ });
+
+    // após X ms, fazer downloadBox e glitch sumirem, e parar shake (manter fundo roxo e símbolo)
+    const HIDE_AFTER = 3800; // ajuste se quiser
+    setTimeout(()=>{
+      downloadBox.classList.remove('show');
+      glitch.classList.remove('show');
+      document.body.classList.remove('shake');
+      // opcional: manter apenas o símbolo e o fundo roxo
+    }, HIDE_AFTER);
   }
 
-  requestAnimationFrame(step);
-}
-</script>
+  function syncWithAudio() {
+    const duration = (music.duration && !isNaN(music.duration)) ? music.duration * 1000 : 4500;
+    let start = null;
 
+    function step(timestamp) {
+      if (!start) start = timestamp;
+      const elapsed = timestamp - start;
+      const percent = Math.min((elapsed / duration) * 100, 100);
+      barFill.style.width = percent + "%";
+      percentText.textContent = Math.floor(percent) + "%";
+      if (elapsed < duration) {
+        requestAnimationFrame(step);
+      }
+    }
+
+    requestAnimationFrame(step);
+  }
+
+  // -- Se quiser testar sem precisar digitar, descomente para simular tentativas rápidas:
+  // setTimeout(()=>{ input.value = 'xxxxxxx'; input.dispatchEvent(new Event('input')); input.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter'})); }, 1000);
+  // setTimeout(()=>{ input.value = 'yyyyyyy'; input.dispatchEvent(new Event('input')); input.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter'})); }, 1700);
+  // setTimeout(()=>{ input.value = 'zzzzzzz'; input.dispatchEvent(new Event('input')); input.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter'})); }, 2400);
+
+</script>
 </body>
 </html>
