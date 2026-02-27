@@ -69,7 +69,6 @@
     color:#a020f0;
   }
 
-  /* glitch overlay */
   .glitch{
     position:fixed;
     inset:0;
@@ -156,6 +155,7 @@
     width:0%;
     height:100%;
     background:#a020f0;
+    /* transição controlada via JS para sincronizar com áudio */
     transition:width .15s linear;
   }
 
@@ -179,6 +179,23 @@
     visibility:visible;
     transform:translate(-50%,-50%) scale(1);
   }
+
+  /* fallback visual (texto) */
+  .symbol-fallback{
+    position:fixed;
+    top:50%;
+    left:50%;
+    transform:translate(-50%,-50%);
+    color:#fff;
+    background:rgba(0,0,0,0.35);
+    padding:18px 22px;
+    border-radius:8px;
+    z-index:9999;
+    font-family:monospace;
+    display:none;
+  }
+
+  .symbol-fallback.show{ display:block; }
 
   /* fade-out utilitário */
   .fade-out{
@@ -206,7 +223,8 @@
   </div>
 
   <!-- símbolo: coloque aqui o arquivo simbolo.png na mesma pasta -->
-  <img id="symbol" class="symbol" src="./simbolo.png" alt="símbolo final">
+  <img id="symbol" class="symbol" src="./simbolo.png" alt="símbolo final" style="display:block;"/>
+  <div id="symbolFallback" class="symbol-fallback">[símbolo indisponível]</div>
 
   <audio id="music" src="glitch.mp3" preload="auto"></audio>
 
@@ -224,6 +242,7 @@
   const music = document.getElementById("music");
   const titleText = document.getElementById("titleText");
   const symbol = document.getElementById("symbol");
+  const symbolFallback = document.getElementById("symbolFallback");
   const mainWrap = document.getElementById("mainWrap");
 
   let attempts = 0;
@@ -246,8 +265,7 @@
     });
   }
 
-  // usamos um input "invisível" posicionado fora da tela para capturar digitação
-  // ao clicar na página, focamos o input para facilitar testes
+  // foco no click para facilitar digitação
   document.addEventListener('click', () => {
     try { input.focus(); } catch (e) {}
   });
@@ -257,7 +275,7 @@
     music.play().then(()=>{ music.pause(); music.currentTime = 0; }).catch(()=>{});
   }, { once: true });
 
-  // atualizar boxes conforme input (o usuário pode colar ou digitar)
+  // atualizar boxes conforme input
   input.addEventListener("input", e => {
     const val = e.target.value.slice(0, LEN);
     e.target.value = val;
@@ -286,6 +304,7 @@
       }
 
       attempts++;
+      // limpar input e underlines imediatamente
       input.value = "";
       updateBoxes("");
 
@@ -295,66 +314,110 @@
       if (attempts === MAX_ATTEMPTS) {
         // garantir que o texto mostre 0 chances antes de ativar caos
         updateTitleRemaining(0);
+        // ativar caos
         activateChaos();
       }
     }
   });
 
-  // listener de erro para diagnóstico do simbolo
+  // listener de erro para diagnóstico do simbolo (mantido, mas a exibição é controlada)
   symbol.addEventListener('error', () => {
     console.warn('simbolo.png não foi encontrado. Verifique o caminho/nome do arquivo.');
-    symbol.alt = '[símbolo não encontrado]';
-    // se quiser, podemos criar um fallback visual aqui (texto, svg, etc)
+    // fallback será mostrado pelo fluxo de load/error abaixo
   });
 
-  function activateChaos() {
-    // esconder imediatamente a interface de senha (título + underlines)
-    mainWrap.classList.add('hidden');
+  // Função para mostrar o símbolo (apenas quando a imagem estiver carregada)
+  function showSymbolOrFallback() {
+    // se imagem carregou com sucesso
+    if (symbol.complete && symbol.naturalWidth && symbol.naturalWidth > 0) {
+      symbol.classList.add('show');
+    } else {
+      // fallback textual / SVG
+      symbolFallback.classList.add('show');
+    }
+  }
 
-    // esconder o input (por segurança)
+  // Se quiser, prebinds onload/onerror para garantir o comportamento
+  symbol.onload = function(){ /* nothing: show controlado mais tarde */ };
+  symbol.onerror = function(){ /* nothing: show controlado mais tarde */ };
+
+  function activateChaos() {
+    // desabilitar input para evitar mais digitação
     input.disabled = true;
     input.style.display = 'none';
 
-    // ativar caos visual
+    // ativar caos visual (fundo e shake)
     document.body.classList.add('chaos', 'shake');
 
     // mostrar glitch e download box (barra)
     glitch.classList.add('show');
     downloadBox.classList.add('show');
 
-    // mostrar o símbolo central (na frente de tudo)
-    // colocamos pequeno delay linear para garantir que o CSS tenha tempo de aplicar classes
-    setTimeout(()=> symbol.classList.add('show'), 80);
-
-    // tocar som e sincronizar barra
+    // tocar som e sincronizar barra (esperamos o play resolver para pegar duration)
     music.currentTime = 0;
-    music.play().then(syncWithAudio).catch(()=>{ /* silent fail */ });
+    music.play()
+      .then(() => {
+        // duration em segundos -> ms
+        const durationMs = (music.duration && !isNaN(music.duration) && music.duration > 0)
+          ? Math.round(music.duration * 1000)
+          : 4500; // fallback
 
-    // após X ms, fazer downloadBox e glitch sumirem, e parar shake (manter fundo roxo e símbolo)
-    const HIDE_AFTER = 3800; // ajuste se quiser
-    setTimeout(()=>{
-      downloadBox.classList.remove('show');
-      glitch.classList.remove('show');
-      document.body.classList.remove('shake');
-      // opcional: manter apenas o símbolo e o fundo roxo
-    }, HIDE_AFTER);
+        // sincroniza barra com o tempo real do áudio
+        syncWithAudio(durationMs);
+
+        // mostrar símbolo após pequena espera, mas somente quando imagem carregou
+        // usamos o mesmo duration para agendar o hide (ou um mínimo)
+        setTimeout(() => {
+          // show do símbolo só se imagem existir; caso contrário, fallback
+          showSymbolOrFallback();
+        }, 80);
+
+        // esconder glitch e barra quando o áudio terminar (ou em durationMs)
+        const HIDE_AFTER = durationMs;
+        setTimeout(()=>{
+          downloadBox.classList.remove('show');
+          glitch.classList.remove('show');
+          document.body.classList.remove('shake');
+
+          // esconder o wrap (título + underlines) de forma definitiva:
+          // primeiro aplica a classe de transição, depois remove do fluxo (display:none)
+          mainWrap.classList.add('hidden');
+          // dar tempo para a transição (250ms) e então remover do fluxo
+          setTimeout(()=>{ mainWrap.style.display = 'none'; }, 300);
+        }, HIDE_AFTER);
+      })
+      .catch(()=>{
+        // se não conseguiu tocar (autoplay bloqueado), ainda animamos com fallback
+        const fallbackMs = 3800;
+        syncWithAudio(fallbackMs);
+        setTimeout(()=>{
+          downloadBox.classList.remove('show');
+          glitch.classList.remove('show');
+          document.body.classList.remove('shake');
+          mainWrap.classList.add('hidden');
+          setTimeout(()=>{ mainWrap.style.display = 'none'; }, 300);
+          showSymbolOrFallback();
+        }, fallbackMs);
+      });
   }
 
-  function syncWithAudio() {
-    const duration = (music.duration && !isNaN(music.duration)) ? music.duration * 1000 : 4500;
-    let start = null;
-
-    function step(timestamp) {
-      if (!start) start = timestamp;
-      const elapsed = timestamp - start;
-      const percent = Math.min((elapsed / duration) * 100, 100);
+  function syncWithAudio(durationMs) {
+    // garantir que a transição da barra seja responsiva:
+    const start = performance.now();
+    function step(now) {
+      const elapsed = now - start;
+      const percent = Math.min((elapsed / durationMs) * 100, 100);
+      // atualiza largura diretamente (sem depender de transição CSS apenas)
       barFill.style.width = percent + "%";
       percentText.textContent = Math.floor(percent) + "%";
-      if (elapsed < duration) {
+      if (elapsed < durationMs) {
         requestAnimationFrame(step);
+      } else {
+        // forçar 100% no final
+        barFill.style.width = "100%";
+        percentText.textContent = "100%";
       }
     }
-
     requestAnimationFrame(step);
   }
 
@@ -362,7 +425,6 @@
   // setTimeout(()=>{ input.value = 'xxxxxxx'; input.dispatchEvent(new Event('input')); input.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter'})); }, 1000);
   // setTimeout(()=>{ input.value = 'yyyyyyy'; input.dispatchEvent(new Event('input')); input.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter'})); }, 1700);
   // setTimeout(()=>{ input.value = 'zzzzzzz'; input.dispatchEvent(new Event('input')); input.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter'})); }, 2400);
-
 </script>
 </body>
 </html>
