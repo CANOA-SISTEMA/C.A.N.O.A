@@ -16,7 +16,6 @@ html,body{
   cursor:text;
 }
 
-/* ===== CENTRO ===== */
 .wrap{
   height:100%;
   display:flex;
@@ -52,7 +51,6 @@ html,body{
   color:#a020f0;
 }
 
-/* INPUT invisível */
 #input{
   position:fixed;
   inset:0;
@@ -63,7 +61,6 @@ html,body{
   outline:none;
 }
 
-/* ===== GLITCH PESADO ===== */
 .glitch{
   position:fixed;
   inset:0;
@@ -92,7 +89,6 @@ html,body{
   100%{transform:translate(0,0);opacity:.7}
 }
 
-/* ===== SÍMBOLO ===== */
 .symbol{
   position:fixed;
   inset:0;
@@ -118,7 +114,6 @@ html,body{
   to{opacity:1;transform:scale(1.1)}
 }
 
-/* ===== DOWNLOAD ROXO ===== */
 .download-box{
   position:fixed;
   bottom:60px;
@@ -170,7 +165,6 @@ html,body{
 <div class="glitch" id="glitch"></div>
 
 <div class="symbol" id="symbol">
-  <!-- coloque o nome exato do arquivo da imagem aqui -->
   <img src="simbolo.png">
 </div>
 
@@ -181,7 +175,10 @@ html,body{
   </div>
 </div>
 
-<audio id="music" src="glitch.mp3" preload="auto"></audio>
+<!-- MP4 COMO ÁUDIO -->
+<video id="music" preload="auto" style="display:none">
+  <source src="glitch.mp4" type="video/mp4">
+</video>
 
 <script>
 const PASSWORD="hegemol";
@@ -200,11 +197,9 @@ const music=document.getElementById("music");
 
 let attempts=0;
 
-/* foco desktop */
 document.body.addEventListener("mouseenter",()=>input.focus());
 document.addEventListener("keydown",()=>input.focus());
 
-/* criar caixas */
 for(let i=0;i<LEN;i++){
   const d=document.createElement("div");
   d.className="char";
@@ -254,7 +249,7 @@ function activateChaos(){
   input.disabled=true;
 
   music.currentTime=0;
-  music.play().catch(()=>{});
+  music.play().catch(()=>{}); // necessário por causa de políticas do navegador
 
   animateDownload(15000);
 }
