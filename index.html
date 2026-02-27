@@ -65,58 +65,54 @@ html,body{
   flex-direction:column;
   font-size:25px;
   z-index:999;
-  animation:shake 0.5s infinite;
 }
 
 .overlay.show{
   display:flex;
 }
 
-@keyframes shake{
-  0%{transform:translate(2px,2px)}
-  25%{transform:translate(-3px,2px)}
-  50%{transform:translate(3px,-2px)}
-  75%{transform:translate(-2px,-3px)}
-  100%{transform:none}
+.progress{
+  position:fixed;
+  bottom:0;
+  left:0;
+  height:6px;
+  width:0%;
+  background:red;
+  z-index:1000;
 }
 
 .glitch{
   position:fixed;
   inset:0;
-  background:linear-gradient(
-    rgba(255,0,0,0.2),
-    rgba(0,255,255,0.2)
-  );
+  background:linear-gradient(rgba(255,0,0,.2),rgba(0,255,255,.2));
   mix-blend-mode:screen;
   pointer-events:none;
   opacity:0;
 }
 
 .glitch.show{
-  animation:flash 0.2s infinite alternate;
+  animation:flash .2s infinite alternate;
 }
 
 @keyframes flash{
-  from{opacity:0.1;}
-  to{opacity:0.8;}
+  from{opacity:.1}
+  to{opacity:.8}
 }
 </style>
 </head>
 <body>
 
-<div class="wrap" id="wrap">
+<div class="wrap">
   <div class="title">3 CHANCES</div>
   <div class="password-line" id="boxes"></div>
   <input id="input" type="password" maxlength="7" style="opacity:0;position:absolute;">
 </div>
 
-<div class="overlay" id="overlay">
-  <div>ACESSO BLOQUEADO</div>
-</div>
-
+<div class="overlay" id="overlay">ACESSO BLOQUEADO</div>
 <div class="glitch" id="glitch"></div>
+<div class="progress" id="progress"></div>
 
-<audio id="music" src="glitch.mp3"></audio>
+<audio id="music" src="glitch.mp3" preload="auto"></audio>
 
 <script>
 const PASS_HASH="f97ac9e04309ce602c5026a251aa2b4523523175ce13b3598399db03b263b4ac";
@@ -128,8 +124,22 @@ const boxes=document.getElementById("boxes");
 const overlay=document.getElementById("overlay");
 const glitch=document.getElementById("glitch");
 const music=document.getElementById("music");
+const progress=document.getElementById("progress");
 
 let attempts=0;
+let audioUnlocked=false;
+
+/* desbloquear áudio no primeiro clique */
+document.addEventListener("click",()=>{
+  if(!audioUnlocked){
+    music.play().then(()=>{
+      music.pause();
+      music.currentTime=0;
+      audioUnlocked=true;
+    }).catch(()=>{});
+  }
+  input.focus();
+},{once:true});
 
 /* criar caixas */
 for(let i=0;i<LEN;i++){
@@ -191,12 +201,27 @@ function activateChaos(){
   music.currentTime=0;
   music.play().catch(()=>{});
 
+  animateProgress(5000);
   input.disabled=true;
 }
 
-document.body.addEventListener("click",()=>{
-  input.focus();
-});
+function animateProgress(duration){
+  progress.style.width="0%";
+  let start=null;
+
+  function step(timestamp){
+    if(!start) start=timestamp;
+    const progressTime=timestamp-start;
+    const percent=Math.min((progressTime/duration)*100,100);
+    progress.style.width=percent+"%";
+
+    if(progressTime<duration){
+      requestAnimationFrame(step);
+    }
+  }
+
+  requestAnimationFrame(step);
+}
 </script>
 
 </body>
