@@ -1,233 +1,3 @@
-<!doctype html>
-<html lang="pt-BR">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>3 chances</title>
-
-<style>
-  html,body{
-    height:100%;
-    margin:0;
-    background:#000; /* fundo inicial escuro */
-    color:#fff;
-    font-family:monospace;
-    overflow:hidden;
-    transition:background .35s ease;
-  }
-
-  .wrap{
-    height:100%;
-    display:flex;
-    flex-direction:column;
-    justify-content:center;
-    align-items:center;
-    gap:25px;
-    transition:opacity .25s, visibility .25s;
-  }
-
-  .wrap.hidden{
-    opacity:0;
-    visibility:hidden;
-    pointer-events:none;
-  }
-
-  .title{
-    font-size:32px;
-    text-shadow:2px 0 red,-2px 0 cyan;
-  }
-
-  .password-line{
-    display:flex;
-    gap:12px;
-  }
-
-  .char{
-    width:35px;
-    height:45px;
-    border-bottom:3px solid #444;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    font-size:20px;
-    color:transparent;
-    transition:border-color .2s, color .2s;
-  }
-
-  .char.filled{
-    border-bottom-color:#ddd;
-    color:#ddd;
-  }
-
-  /* caos só quando ativado */
-  body.chaos{
-    background:#2b0033;
-  }
-
-  body.chaos .char.filled{
-    border-bottom-color:#a020f0;
-    color:#a020f0;
-  }
-
-  .glitch{
-    position:fixed;
-    inset:0;
-    background:
-      repeating-linear-gradient(
-        0deg,
-        rgba(255,0,0,.2) 0px,
-        rgba(0,255,255,.2) 2px,
-        transparent 4px
-      );
-    mix-blend-mode:screen;
-    pointer-events:none;
-    opacity:0;
-    z-index:20;
-    transition:opacity .15s;
-  }
-
-  .glitch.show{
-    animation:glitchHeavy .08s infinite;
-    opacity:1;
-  }
-
-  @keyframes glitchHeavy{
-    0%{transform:translate(0,0);opacity:.2}
-    25%{transform:translate(-5px,3px);opacity:.6}
-    50%{transform:translate(5px,-3px);opacity:.8}
-    75%{transform:translate(-3px,2px);opacity:.5}
-    100%{transform:translate(0,0);opacity:.7}
-  }
-
-  /* shake */
-  .shake{
-    animation:shakeScreen .1s infinite;
-  }
-
-  @keyframes shakeScreen{
-    0%{transform:translate(0,0);}
-    25%{transform:translate(-8px,5px);}
-    50%{transform:translate(8px,-5px);}
-    75%{transform:translate(-5px,3px);}
-    100%{transform:translate(0,0);}
-  }
-
-  /* download box */
-  .download-box{
-    position:fixed;
-    bottom:80px;
-    left:50%;
-    transform:translateX(-50%);
-    width:75%;
-    max-width:900px;
-    display:flex;
-    flex-direction:column;
-    gap:20px;
-    z-index:40;
-    pointer-events:none;
-    opacity:0;
-    visibility:hidden;
-    transition:opacity .25s, visibility .25s;
-  }
-
-  .download-box.show{
-    opacity:1;
-    visibility:visible;
-  }
-
-  .percent{
-    font-size:70px;
-    font-weight:bold;
-    color:#a020f0;
-    text-shadow:0 0 20px #a020f0;
-    text-align:center;
-  }
-
-  .bar{
-    width:100%;
-    height:45px;
-    border:4px solid #a020f0;
-    padding:6px;
-    box-shadow:0 0 25px #a020f0;
-  }
-
-  .bar-fill{
-    width:0%;
-    height:100%;
-    background:#a020f0;
-    /* transição controlada via JS para sincronizar com áudio */
-    transition:width .15s linear;
-  }
-
-  /* símbolo central (sempre no topo) */
-  .symbol{
-    position:fixed;
-    top:50%;
-    left:50%;
-    transform:translate(-50%,-50%) scale(.6);
-    width:180px;
-    max-width:40vw;
-    z-index:9999; /* na frente de tudo */
-    opacity:0;
-    visibility:hidden;
-    transition:all .35s ease;
-    pointer-events:none;
-  }
-
-  .symbol.show{
-    opacity:1;
-    visibility:visible;
-    transform:translate(-50%,-50%) scale(1);
-  }
-
-  /* fallback visual (texto) */
-  .symbol-fallback{
-    position:fixed;
-    top:50%;
-    left:50%;
-    transform:translate(-50%,-50%);
-    color:#fff;
-    background:rgba(0,0,0,0.35);
-    padding:18px 22px;
-    border-radius:8px;
-    z-index:9999;
-    font-family:monospace;
-    display:none;
-  }
-
-  .symbol-fallback.show{ display:block; }
-
-  /* fade-out utilitário */
-  .fade-out{
-    opacity:0 !important;
-    visibility:hidden !important;
-  }
-</style>
-</head>
-<body>
-
-  <div class="wrap" id="mainWrap">
-    <div class="title" id="titleText">3 chances</div>
-    <div class="password-line" id="boxes"></div>
-  </div>
-
-  <input id="input" type="password" maxlength="7" autocomplete="off" autocapitalize="off" style="position:fixed;left:-9999px;">
-
-  <div class="glitch" id="glitch"></div>
-
-  <div class="download-box" id="downloadBox">
-    <div class="percent" id="percentText">0%</div>
-    <div class="bar">
-      <div class="bar-fill" id="barFill"></div>
-    </div>
-  </div>
-
-  <!-- símbolo: coloque aqui o arquivo simbolo.png na mesma pasta -->
-  <img id="symbol" class="symbol" src="./simbolo.png" alt="símbolo final" style="display:block;"/>
-  <div id="symbolFallback" class="symbol-fallback">[símbolo indisponível]</div>
-
-  <audio id="music" src="glitch.mp3" preload="auto"></audio>
-
 <script>
   const PASSWORD = "hegemol";
   const LEN = 7;
@@ -242,12 +12,10 @@
   const music = document.getElementById("music");
   const titleText = document.getElementById("titleText");
   const symbol = document.getElementById("symbol");
-  const symbolFallback = document.getElementById("symbolFallback");
   const mainWrap = document.getElementById("mainWrap");
 
   let attempts = 0;
 
-  // título inicial
   titleText.textContent = `${MAX_ATTEMPTS} chances`;
 
   // Criar boxes
@@ -265,24 +33,23 @@
     });
   }
 
-  // foco no click para facilitar digitação
   document.addEventListener('click', () => {
     try { input.focus(); } catch (e) {}
   });
 
-  // liberar autoplay em alguns navegadores (toca+pause)
   document.addEventListener("click", () => {
-    music.play().then(()=>{ music.pause(); music.currentTime = 0; }).catch(()=>{});
+    music.play().then(()=>{
+      music.pause();
+      music.currentTime = 0;
+    }).catch(()=>{});
   }, { once: true });
 
-  // atualizar boxes conforme input
   input.addEventListener("input", e => {
     const val = e.target.value.slice(0, LEN);
     e.target.value = val;
     updateBoxes(val);
   });
 
-  // inicializamos o valor do input como vazio e focado
   input.value = "";
   setTimeout(()=>{ try{ input.focus(); }catch(e){} }, 50);
 
@@ -292,7 +59,6 @@
     else titleText.textContent = `0 chances`;
   }
 
-  // detectar Enter para checar senha
   input.addEventListener("keydown", e => {
     if (e.key === "Enter") {
       const v = input.value;
@@ -304,7 +70,6 @@
       }
 
       attempts++;
-      // limpar input e underlines imediatamente
       input.value = "";
       updateBoxes("");
 
@@ -312,119 +77,66 @@
       updateTitleRemaining(remaining);
 
       if (attempts === MAX_ATTEMPTS) {
-        // garantir que o texto mostre 0 chances antes de ativar caos
         updateTitleRemaining(0);
-        // ativar caos
         activateChaos();
       }
     }
   });
 
-  // listener de erro para diagnóstico do simbolo (mantido, mas a exibição é controlada)
-  symbol.addEventListener('error', () => {
-    console.warn('simbolo.png não foi encontrado. Verifique o caminho/nome do arquivo.');
-    // fallback será mostrado pelo fluxo de load/error abaixo
-  });
-
-  // Função para mostrar o símbolo (apenas quando a imagem estiver carregada)
-  function showSymbolOrFallback() {
-    // se imagem carregou com sucesso
-    if (symbol.complete && symbol.naturalWidth && symbol.naturalWidth > 0) {
-      symbol.classList.add('show');
-    } else {
-      // fallback textual / SVG
-      symbolFallback.classList.add('show');
-    }
-  }
-
-  // Se quiser, prebinds onload/onerror para garantir o comportamento
-  symbol.onload = function(){ /* nothing: show controlado mais tarde */ };
-  symbol.onerror = function(){ /* nothing: show controlado mais tarde */ };
-
   function activateChaos() {
-    // desabilitar input para evitar mais digitação
+
     input.disabled = true;
     input.style.display = 'none';
+    mainWrap.classList.add('hidden');
 
-    // ativar caos visual (fundo e shake)
     document.body.classList.add('chaos', 'shake');
-
-    // mostrar glitch e download box (barra)
     glitch.classList.add('show');
     downloadBox.classList.add('show');
 
-    // tocar som e sincronizar barra (esperamos o play resolver para pegar duration)
+    symbol.classList.add('show');
+
     music.currentTime = 0;
-    music.play()
-      .then(() => {
-        // duration em segundos -> ms
-        const durationMs = (music.duration && !isNaN(music.duration) && music.duration > 0)
-          ? Math.round(music.duration * 1000)
-          : 4500; // fallback
 
-        // sincroniza barra com o tempo real do áudio
-        syncWithAudio(durationMs);
+    music.play().then(() => {
+      syncWithAudio();
+    });
 
-        // mostrar símbolo após pequena espera, mas somente quando imagem carregou
-        // usamos o mesmo duration para agendar o hide (ou um mínimo)
-        setTimeout(() => {
-          // show do símbolo só se imagem existir; caso contrário, fallback
-          showSymbolOrFallback();
-        }, 80);
+    music.addEventListener("ended", () => {
+      barFill.style.width = "100%";
+      percentText.textContent = "100%";
 
-        // esconder glitch e barra quando o áudio terminar (ou em durationMs)
-        const HIDE_AFTER = durationMs;
-        setTimeout(()=>{
-          downloadBox.classList.remove('show');
-          glitch.classList.remove('show');
-          document.body.classList.remove('shake');
-
-          // esconder o wrap (título + underlines) de forma definitiva:
-          // primeiro aplica a classe de transição, depois remove do fluxo (display:none)
-          mainWrap.classList.add('hidden');
-          // dar tempo para a transição (250ms) e então remover do fluxo
-          setTimeout(()=>{ mainWrap.style.display = 'none'; }, 300);
-        }, HIDE_AFTER);
-      })
-      .catch(()=>{
-        // se não conseguiu tocar (autoplay bloqueado), ainda animamos com fallback
-        const fallbackMs = 3800;
-        syncWithAudio(fallbackMs);
-        setTimeout(()=>{
-          downloadBox.classList.remove('show');
-          glitch.classList.remove('show');
-          document.body.classList.remove('shake');
-          mainWrap.classList.add('hidden');
-          setTimeout(()=>{ mainWrap.style.display = 'none'; }, 300);
-          showSymbolOrFallback();
-        }, fallbackMs);
-      });
+      setTimeout(() => {
+        downloadBox.classList.remove('show');
+        glitch.classList.remove('show');
+        document.body.classList.remove('shake');
+      }, 300);
+    });
   }
 
-  function syncWithAudio(durationMs) {
-    // garantir que a transição da barra seja responsiva:
-    const start = performance.now();
-    function step(now) {
-      const elapsed = now - start;
-      const percent = Math.min((elapsed / durationMs) * 100, 100);
-      // atualiza largura diretamente (sem depender de transição CSS apenas)
+  // 🔥 FUNÇÃO CORRIGIDA – AGORA USA O TEMPO REAL DO ÁUDIO
+  function syncWithAudio() {
+
+    function update() {
+
+      if (!music.duration || isNaN(music.duration)) {
+        requestAnimationFrame(update);
+        return;
+      }
+
+      const percent = (music.currentTime / music.duration) * 100;
+
       barFill.style.width = percent + "%";
       percentText.textContent = Math.floor(percent) + "%";
-      if (elapsed < durationMs) {
-        requestAnimationFrame(step);
+
+      if (!music.paused && !music.ended) {
+        requestAnimationFrame(update);
       } else {
-        // forçar 100% no final
         barFill.style.width = "100%";
         percentText.textContent = "100%";
       }
     }
-    requestAnimationFrame(step);
+
+    requestAnimationFrame(update);
   }
 
-  // -- Se quiser testar sem precisar digitar, descomente para simular tentativas rápidas:
-  // setTimeout(()=>{ input.value = 'xxxxxxx'; input.dispatchEvent(new Event('input')); input.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter'})); }, 1000);
-  // setTimeout(()=>{ input.value = 'yyyyyyy'; input.dispatchEvent(new Event('input')); input.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter'})); }, 1700);
-  // setTimeout(()=>{ input.value = 'zzzzzzz'; input.dispatchEvent(new Event('input')); input.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter'})); }, 2400);
 </script>
-</body>
-</html>
