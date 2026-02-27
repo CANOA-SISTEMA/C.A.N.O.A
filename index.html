@@ -1,8 +1,240 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>3 chances</title>
+
+<style>
+  html,body{
+    height:100%;
+    margin:0;
+    background:#000; /* fundo inicial escuro */
+    color:#fff;
+    font-family:monospace;
+    overflow:hidden;
+    transition:background .35s ease;
+  }
+
+  .wrap{
+    height:100%;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    align-items:center;
+    gap:25px;
+    transition:opacity .25s, visibility .25s;
+  }
+
+  .wrap.hidden{
+    opacity:0;
+    visibility:hidden;
+    pointer-events:none;
+  }
+
+  .title{
+    font-size:32px;
+    text-shadow:2px 0 red,-2px 0 cyan;
+  }
+
+  .password-line{
+    display:flex;
+    gap:12px;
+  }
+
+  .char{
+    width:35px;
+    height:45px;
+    border-bottom:3px solid #444;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:20px;
+    color:transparent;
+    transition:border-color .2s, color .2s;
+  }
+
+  .char.filled{
+    border-bottom-color:#ddd;
+    color:#ddd;
+  }
+
+  body.chaos{
+    background:#2b0033;
+  }
+
+  body.chaos .char.filled{
+    border-bottom-color:#a020f0;
+    color:#a020f0;
+  }
+
+  .glitch{
+    position:fixed;
+    inset:0;
+    background:
+      repeating-linear-gradient(
+        0deg,
+        rgba(255,0,0,.2) 0px,
+        rgba(0,255,255,.2) 2px,
+        transparent 4px
+      );
+    mix-blend-mode:screen;
+    pointer-events:none;
+    opacity:0;
+    z-index:20;
+    transition:opacity .15s;
+  }
+
+  .glitch.show{
+    animation:glitchHeavy .08s infinite;
+    opacity:1;
+  }
+
+  @keyframes glitchHeavy{
+    0%{transform:translate(0,0);opacity:.2}
+    25%{transform:translate(-5px,3px);opacity:.6}
+    50%{transform:translate(5px,-3px);opacity:.8}
+    75%{transform:translate(-3px,2px);opacity:.5}
+    100%{transform:translate(0,0);opacity:.7}
+  }
+
+  .shake{
+    animation:shakeScreen .1s infinite;
+  }
+
+  @keyframes shakeScreen{
+    0%{transform:translate(0,0);}
+    25%{transform:translate(-8px,5px);}
+    50%{transform:translate(8px,-5px);}
+    75%{transform:translate(-5px,3px);}
+    100%{transform:translate(0,0);}
+  }
+
+  .download-box{
+    position:fixed;
+    bottom:80px;
+    left:50%;
+    transform:translateX(-50%);
+    width:75%;
+    max-width:900px;
+    display:flex;
+    flex-direction:column;
+    gap:20px;
+    z-index:40;
+    pointer-events:none;
+    opacity:0;
+    visibility:hidden;
+    transition:opacity .25s, visibility .25s;
+  }
+
+  .download-box.show{
+    opacity:1;
+    visibility:visible;
+  }
+
+  .percent{
+    font-size:70px;
+    font-weight:bold;
+    color:#a020f0;
+    text-shadow:0 0 20px #a020f0;
+    text-align:center;
+  }
+
+  .bar{
+    width:100%;
+    height:45px;
+    border:4px solid #a020f0;
+    padding:6px;
+    box-shadow:0 0 25px #a020f0;
+  }
+
+  .bar-fill{
+    width:0%;
+    height:100%;
+    background:#a020f0;
+    transition:width .12s linear;
+  }
+
+  .symbol{
+    position:fixed;
+    top:50%;
+    left:50%;
+    transform:translate(-50%,-50%) scale(.6);
+    width:180px;
+    max-width:40vw;
+    z-index:9999;
+    opacity:0;
+    visibility:hidden;
+    transition:all .35s ease;
+    pointer-events:none;
+  }
+
+  .symbol.show{
+    opacity:1;
+    visibility:visible;
+    transform:translate(-50%,-50%) scale(1);
+  }
+
+  .symbol-fallback{
+    position:fixed;
+    top:50%;
+    left:50%;
+    transform:translate(-50%,-50%);
+    color:#fff;
+    background:rgba(0,0,0,0.35);
+    padding:18px 22px;
+    border-radius:8px;
+    z-index:9999;
+    font-family:monospace;
+    display:none;
+  }
+
+  .symbol-fallback.show{ display:block; }
+
+  .fade-out{
+    opacity:0 !important;
+    visibility:hidden !important;
+  }
+</style>
+</head>
+<body>
+
+  <div class="wrap" id="mainWrap">
+    <div class="title" id="titleText">3 chances</div>
+    <div class="password-line" id="boxes"></div>
+  </div>
+
+  <input id="input" type="password" maxlength="7" autocomplete="off" autocapitalize="off" style="position:fixed;left:-9999px;">
+
+  <div class="glitch" id="glitch"></div>
+
+  <div class="download-box" id="downloadBox">
+    <div class="percent" id="percentText">0%</div>
+    <div class="bar">
+      <div class="bar-fill" id="barFill"></div>
+    </div>
+  </div>
+
+  <img id="symbol" class="symbol" src="./simbolo.png" alt="símbolo final" style="display:block;"/>
+  <div id="symbolFallback" class="symbol-fallback">[símbolo indisponível]</div>
+
+  <audio id="music" src="glitch.mp3" preload="auto"></audio>
+
 <script>
+  /***********************
+   * Configurações
+   ***********************/
   const PASSWORD = "hegemol";
   const LEN = 7;
   const MAX_ATTEMPTS = 3;
 
+  // Quanto antes a barra deve completar antes do áudio terminar (ms)
+  // Aumente para fazer a barra terminar bem antes; reduza para chegar mais perto do fim do áudio.
+  const BUFFER_MS = 500; // barra completa 500ms antes do audio terminar
+
+  /***********************
+   * Elementos DOM
+   ***********************/
   const input = document.getElementById("input");
   const boxes = document.getElementById("boxes");
   const glitch = document.getElementById("glitch");
@@ -12,13 +244,19 @@
   const music = document.getElementById("music");
   const titleText = document.getElementById("titleText");
   const symbol = document.getElementById("symbol");
+  const symbolFallback = document.getElementById("symbolFallback");
   const mainWrap = document.getElementById("mainWrap");
 
   let attempts = 0;
+  let progressRAF = null;     // requestAnimationFrame id
+  let progressTargetEnd = null; // tempo (em segundos) onde a barra deve atingir 100%
 
+  /***********************
+   * Inicialização UI
+   ***********************/
   titleText.textContent = `${MAX_ATTEMPTS} chances`;
 
-  // Criar boxes
+  // criar underline boxes
   for (let i = 0; i < LEN; i++) {
     const d = document.createElement("div");
     d.className = "char";
@@ -33,17 +271,17 @@
     });
   }
 
+  // foco ao clicar (captura digitação)
   document.addEventListener('click', () => {
     try { input.focus(); } catch (e) {}
   });
 
+  // habilitar autoplay em alguns navegadores (play + pause)
   document.addEventListener("click", () => {
-    music.play().then(()=>{
-      music.pause();
-      music.currentTime = 0;
-    }).catch(()=>{});
+    music.play().then(()=>{ music.pause(); music.currentTime = 0; }).catch(()=>{});
   }, { once: true });
 
+  // atualiza as caixas enquanto digita
   input.addEventListener("input", e => {
     const val = e.target.value.slice(0, LEN);
     e.target.value = val;
@@ -59,6 +297,9 @@
     else titleText.textContent = `0 chances`;
   }
 
+  /***********************
+   * Lógica de tentativas
+   ***********************/
   input.addEventListener("keydown", e => {
     if (e.key === "Enter") {
       const v = input.value;
@@ -77,66 +318,264 @@
       updateTitleRemaining(remaining);
 
       if (attempts === MAX_ATTEMPTS) {
+        // mostrar 0 chances imediatamente e iniciar sequência final
         updateTitleRemaining(0);
         activateChaos();
       }
     }
   });
 
-  function activateChaos() {
+  /***********************
+   * Carregamento do símbolo
+   ***********************/
+  // se imagem carregar bem, mantemos; se erro, usaremos fallback
+  symbol.addEventListener('error', () => {
+    console.warn('simbolo.png não foi encontrado. Usando fallback textual.');
+  });
 
+  // mostra símbolo ou fallback
+  function showSymbolOrFallback() {
+    if (symbol.complete && symbol.naturalWidth && symbol.naturalWidth > 0) {
+      symbol.classList.add('show');
+    } else {
+      symbolFallback.classList.add('show');
+    }
+  }
+
+  /***********************
+   * Ativa caos e barra sincronizada
+   ***********************/
+  function activateChaos() {
+    // desativa input e esconde visualmente o wrap (mas mantemos controle)
     input.disabled = true;
     input.style.display = 'none';
-    mainWrap.classList.add('hidden');
 
+    // aplica estilo de fundo caótico e shake
     document.body.classList.add('chaos', 'shake');
+
+    // mostra glitch e a download box
     glitch.classList.add('show');
     downloadBox.classList.add('show');
 
-    symbol.classList.add('show');
+    // reset visual da barra
+    barFill.style.width = "0%";
+    percentText.textContent = "0%";
 
+    // Força símbolo oculto até a hora certa (evita piscar antes)
+    symbol.classList.remove('show');
+    symbolFallback.classList.remove('show');
+
+    // tenta tocar áudio
     music.currentTime = 0;
+    const playPromise = music.play();
 
-    music.play().then(() => {
-      syncWithAudio();
-    });
-
-    music.addEventListener("ended", () => {
-      barFill.style.width = "100%";
-      percentText.textContent = "100%";
-
-      setTimeout(() => {
-        downloadBox.classList.remove('show');
-        glitch.classList.remove('show');
-        document.body.classList.remove('shake');
-      }, 300);
-    });
+    // caso o áudio possa tocar, configuramos a barra para terminar antes do ended
+    // se o play for bloqueado, usamos fallback de tempo.
+    if (playPromise && typeof playPromise.then === 'function') {
+      playPromise.then(() => {
+        prepareProgressForAudio();
+      }).catch(() => {
+        // autoplay bloqueado: usamos fallback temporal
+        prepareProgressFallback();
+      });
+    } else {
+      // ambientes onde play retorna undefined
+      prepareProgressForAudio();
+    }
   }
 
-  // 🔥 FUNÇÃO CORRIGIDA – AGORA USA O TEMPO REAL DO ÁUDIO
-  function syncWithAudio() {
+  /***********************
+   * Prepara mapeamento de progresso baseado no audio
+   * A barra completará em (duration - BUFFER_MS).
+   ***********************/
+  function prepareProgressForAudio() {
+    // se duration já disponível e razoável, usamos direto. Senão escutamos loadedmetadata
+    if (music.duration && !isNaN(music.duration) && music.duration > 0.1) {
+      setProgressTargetFromDuration(music.duration);
+      startProgressLoop();
+    } else {
+      // aguarda metadados
+      const onMeta = () => {
+        if (music.duration && !isNaN(music.duration) && music.duration > 0.1) {
+          music.removeEventListener('loadedmetadata', onMeta);
+          setProgressTargetFromDuration(music.duration);
+          startProgressLoop();
+        }
+      };
+      music.addEventListener('loadedmetadata', onMeta);
+      // também em caso de already loaded
+      setTimeout(() => {
+        if (music.duration && !isNaN(music.duration) && music.duration > 0.1) {
+          music.removeEventListener('loadedmetadata', onMeta);
+          setProgressTargetFromDuration(music.duration);
+          startProgressLoop();
+        }
+      }, 200);
+    }
 
-    function update() {
+    // garantir que, se o áudio terminar antes do progresso, forçamos 100% (só precaução)
+    music.addEventListener('ended', () => {
+      forceCompleteProgress();
+    }, { once: true });
+  }
 
-      if (!music.duration || isNaN(music.duration)) {
-        requestAnimationFrame(update);
+  /***********************
+   * Fallback quando o áudio não pôde tocar (autoplay bloqueado)
+   * Usamos um tempo fixo (ex.: 3800ms)
+   ***********************/
+  function prepareProgressFallback() {
+    const fallbackMs = 3800;
+    // mapeamos para um "duration" fictício e completamos antes do final
+    setProgressTargetFromDuration(fallbackMs / 1000);
+    startProgressLoop();
+    // esconder UI após fallback
+    setTimeout(() => {
+      cleanupAfterProgress();
+    }, fallbackMs + 200);
+  }
+
+  /***********************
+   * Calcula o tempo (em segundos) onde a barra deve atingir 100%
+   * Recebe duration em segundos.
+   ***********************/
+  function setProgressTargetFromDuration(durationSec) {
+    // converte buffer para segundos
+    const bufferSec = BUFFER_MS / 1000;
+
+    // se duration muito curto, fazemos barra terminar em 90% do tempo para evitar negative target
+    if (durationSec <= bufferSec + 0.2) {
+      progressTargetEnd = durationSec * 0.9; // 90% do audio
+    } else {
+      progressTargetEnd = Math.max(0.1, durationSec - bufferSec);
+    }
+    // console.log('durationSec', durationSec, 'progressTargetEnd', progressTargetEnd);
+  }
+
+  /***********************
+   * Loop de animação da barra — usa currentTime DO AUDIO
+   * A barra avança proporcionalmente a:
+   *    currentTime / progressTargetEnd
+   * sendo capado em 100%. Quando atinge 100%, chamamos finalização.
+   ***********************/
+  function startProgressLoop() {
+    // cancela qualquer RAF anterior
+    if (progressRAF) cancelAnimationFrame(progressRAF);
+
+    function step() {
+      // proteção: se target não definido, abort
+      if (typeof progressTargetEnd !== 'number' || !isFinite(progressTargetEnd) || progressTargetEnd <= 0) {
+        progressRAF = requestAnimationFrame(step);
         return;
       }
 
-      const percent = (music.currentTime / music.duration) * 100;
+      // usar o tempo atual do áudio; se não houver áudio tocando, usamos performance.now fallback
+      let currentSec = (typeof music.currentTime === 'number') ? music.currentTime : 0;
 
-      barFill.style.width = percent + "%";
-      percentText.textContent = Math.floor(percent) + "%";
+      // calcular percent: currentSec / progressTargetEnd
+      let p = (currentSec / progressTargetEnd) * 100;
+      // cap e correção para bounds
+      if (p < 0) p = 0;
+      if (p > 100) p = 100;
 
-      if (!music.paused && !music.ended) {
-        requestAnimationFrame(update);
+      barFill.style.width = p.toFixed(2) + "%";
+      percentText.textContent = Math.floor(p) + "%";
+
+      if (p >= 100) {
+        // completou a barra ANTES do audio terminar: executa finalização específica
+        onProgressCompleteBeforeAudioEnd();
+        // não precisamos continuar o RAF
+        return;
+      }
+
+      // continuar enquanto o audio não terminou e p<100
+      if (!music.ended) {
+        progressRAF = requestAnimationFrame(step);
       } else {
-        barFill.style.width = "100%";
-        percentText.textContent = "100%";
+        // se audio terminou inesperadamente, forçar complete
+        forceCompleteProgress();
       }
     }
 
-    requestAnimationFrame(update);
+    // start
+    progressRAF = requestAnimationFrame(step);
   }
 
+  /***********************
+   * Quando a barra alcança 100% antes do audio terminar
+   * — queremos: mostrar símbolo, parar/ocultar download UI, manter fundo roxo
+   ***********************/
+  function onProgressCompleteBeforeAudioEnd() {
+    // força 100% visualmente
+    barFill.style.width = "100%";
+    percentText.textContent = "100%";
+
+    // mostrar símbolo (pode ser imagem ou fallback)
+    showSymbolOrFallback();
+
+    // pequenas animações: esconder glitch e a download box rapidamente
+    setTimeout(() => {
+      downloadBox.classList.remove('show');
+      glitch.classList.remove('show');
+    }, 250);
+
+    // parar o loop de RAF
+    if (progressRAF) {
+      cancelAnimationFrame(progressRAF);
+      progressRAF = null;
+    }
+
+    // esconder o mainWrap definitivamente (se ainda não oculto)
+    mainWrap.classList.add('hidden');
+    setTimeout(()=>{ mainWrap.style.display = 'none'; }, 300);
+  }
+
+  /***********************
+   * Forçar completar (called on audio ended edge-case)
+   ***********************/
+  function forceCompleteProgress() {
+    barFill.style.width = "100%";
+    percentText.textContent = "100%";
+    showSymbolOrFallback();
+
+    // limpar RAF
+    if (progressRAF) cancelAnimationFrame(progressRAF);
+    progressRAF = null;
+
+    // esconder UI pouco depois
+    setTimeout(() => {
+      downloadBox.classList.remove('show');
+      glitch.classList.remove('show');
+      document.body.classList.remove('shake');
+    }, 300);
+
+    mainWrap.classList.add('hidden');
+    setTimeout(()=>{ mainWrap.style.display = 'none'; }, 300);
+  }
+
+  /***********************
+   * Limpeza final caso use fallback
+   ***********************/
+  function cleanupAfterProgress() {
+    // esconder UI
+    downloadBox.classList.remove('show');
+    glitch.classList.remove('show');
+    document.body.classList.remove('shake');
+
+    // mostrar simbolo/fallback
+    showSymbolOrFallback();
+
+    mainWrap.classList.add('hidden');
+    setTimeout(()=>{ mainWrap.style.display = 'none'; }, 300);
+  }
+
+  /***********************
+   * Segurança: se o usuário quiser simular 3 tentativas (test)
+   * (Descomente para testar)
+   ***********************/
+  // setTimeout(()=>{ input.value = 'xxxxxxx'; input.dispatchEvent(new Event('input')); input.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter'})); }, 1000);
+  // setTimeout(()=>{ input.value = 'yyyyyyy'; input.dispatchEvent(new Event('input')); input.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter'})); }, 1700);
+  // setTimeout(()=>{ input.value = 'zzzzzzz'; input.dispatchEvent(new Event('input')); input.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter'})); }, 2400);
+
 </script>
+</body>
+</html>
