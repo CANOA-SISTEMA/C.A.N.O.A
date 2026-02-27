@@ -152,7 +152,6 @@ html,body{
   background:#a020f0;
 }
 
-/* remove underline após falha */
 .no-underline .char{
   border-bottom:none !important;
 }
@@ -203,6 +202,14 @@ let attempts=0;
 document.body.addEventListener("mouseenter",()=>input.focus());
 document.addEventListener("keydown",()=>input.focus());
 
+/* Desbloqueia o áudio na primeira interação */
+document.addEventListener("click",()=>{
+  music.play().then(()=>{
+    music.pause();
+    music.currentTime=0;
+  }).catch(()=>{});
+},{once:true});
+
 for(let i=0;i<LEN;i++){
   const d=document.createElement("div");
   d.className="char";
@@ -245,15 +252,21 @@ input.addEventListener("keydown",e=>{
 function activateChaos(){
   input.disabled=true;
 
-  titleText.style.display="none"; // remove texto tentativas
-  wrap.classList.add("no-underline"); // remove underline
+  titleText.style.display="none";
+  wrap.classList.add("no-underline");
 
   glitch.classList.add("show");
   symbol.classList.add("show");
   downloadBox.classList.add("show");
 
   music.currentTime=0;
-  music.play().catch(()=>{});
+
+  const playPromise=music.play();
+  if(playPromise!==undefined){
+    playPromise.catch(err=>{
+      console.error("Erro ao tocar áudio:",err);
+    });
+  }
 
   animateDownload(15000);
 }
